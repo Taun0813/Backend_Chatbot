@@ -1,0 +1,447 @@
+
+services:
+  #postgresql
+  postgresql:
+    image: postgres:15-alpine
+    container_name: ai-agent-postgres
+    environment:
+      POSTGRES_DB: ai_agent
+      POSTGRES_USER: ai_agent
+      POSTGRES_PASSWORD: 123
+    ports:
+      - "5433:5432"
+    networks:
+      - ai-agent-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ai-agent-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ai-agent-network
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ai-agent-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: rabbitmq_password
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ai-agent-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ===========================================
+  # MONITORING & OBSERVABILITY
+  # ===========================================
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: ai-agent-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - ai-agent-network
+    depends_on:
+      - postgresql
+      - redis
+      - rabbitmq
+
+  # Grafana - Monitoring Dashboards
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: ai-agent-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: grafana_password
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - ai-agent-network
+    depends_on:
+      - prometheus
+
+  # Jaeger - Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: ai-agent-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    networks:
+      - ai-agent-network
+
+  # Elasticsearch - Log Storage
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ai-agent-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - ai-agent-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana - Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: ai-agent-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - ai-agent-network
+    depends_on:
+      - elasticsearch
+
+  # ===========================================
+  # ADDITIONAL TOOLS
+  # ===========================================
+
+  # Nginx - Load Balancer & Reverse Proxy
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ai-agent-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - ai-agent-network
+    depends_on:
+      - postgresql
+      - redis
+      - rabbitmq
+
+  # Consul - Service Discovery
+  consul:
+    image: hashicorp/consul:1.19
+    container_name: ai-agent-consul
+    ports:
+      - "8500:8500"
+    command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
+    networks:
+      - ai-agent-network
+
+  # MinIO - Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: ai-agent-minio
+    ports:
+      - "9000:9000"    # API port
+      - "9001:9001"    # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minio_password
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ai-agent-network
+
+  # Adminer - Database Management UI
+  adminer:
+    image: adminer:4.8.1
+    container_name: ai-agent-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - ai-agent-network
+    depends_on:
+      - postgresql
+
+  # ===========================================
+  # APPLICATION SERVICES
+  # ===========================================
+
+  # Eureka Server
+  ai-agent-discovery:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.discovery
+    container_name: ai-agent-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+    networks:
+      - ai-agent-network
+    depends_on:
+      - postgresql
+      - redis
+      - rabbitmq
+
+  # API Gateway
+  ai-agent-gateway:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.gateway
+    container_name: ai-agent-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+
+  # Core Service
+  ai-agent-core:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.core
+    container_name: ai-agent-core
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - postgresql
+      - redis
+
+  # Product Service
+  product-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.product
+    container_name: product-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - postgresql
+      - redis
+
+  # AI Agent Integration
+  ai-agent-integration:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.ai-agent
+    container_name: ai-agent-integration
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - redis
+
+  # User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.user
+    container_name: user-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - postgresql
+      - redis
+
+  # Order Service
+  order-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.order
+    container_name: order-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - postgresql
+      - redis
+
+  # Warranty Service
+  warranty-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.warranty
+    container_name: warranty-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - postgresql
+      - redis
+
+  # Recommendation Service
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.recommendation
+    container_name: recommendation-service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - redis
+
+  # Search Service
+  search-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.search
+    container_name: search-service
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+      AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+    networks:
+      - ai-agent-network
+    depends_on:
+      - ai-agent-discovery
+      - redis
+
+  # Python AI Agent (Optional - if you have the Python service)
+  python-ai-agent:
+    build:
+      context: ../python-ai-agent  # Adjust path to your Python AI Agent
+      dockerfile: Dockerfile
+    container_name: python-ai-agent
+    ports:
+      - "8000:8000"
+    environment:
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    networks:
+      - ai-agent-network
+    profiles:
+      - ai-agent  # Only start with --profile ai-agent
+
+volumes:
+#  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+  minio_data:
+
+networks:
+  ai-agent-network:
+    driver: bridge
