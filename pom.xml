@@ -30,6 +30,7 @@
         <module>warranty-service</module>
         <module>recommendation-service</module>
         <module>cart-service</module>
+        <module>inventory-service</module>
         <!-- Add services here  -->
     </modules>
 
