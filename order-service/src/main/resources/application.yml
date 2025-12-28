@@ -1,6 +1,6 @@
 spring:
   application:
-    name: product-service
+    name: order-service
 
   datasource:
     url: jdbc:postgresql://localhost:5433/ai_agent
@@ -18,7 +18,7 @@ spring:
         format_sql: true
 
 server:
-  port: 8082
+  port: 8081
 
 eureka:
   client:
