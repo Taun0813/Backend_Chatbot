@@ -1,0 +1,209 @@
+1️⃣ USER SERVICE
+Schema
+users
+id UUID PK
+email VARCHAR UNIQUE
+password_hash VARCHAR
+full_name VARCHAR
+role ENUM(USER, ADMIN)
+created_at TIMESTAMP
+
+APIs
+POST /users/register
+{
+  "email": "a@gmail.com",
+  "password": "123456",
+  "full_name": "Nguyen Van A"
+}
+
+{
+  "user_id": "uuid",
+  "email": "a@gmail.com"
+}
+
+POST /users/login
+{
+  "email": "a@gmail.com",
+  "password": "123456"
+}
+
+{
+  "access_token": "jwt",
+  "user_id": "uuid"
+}
+
+2️⃣ PRODUCT SERVICE (RẤT QUAN TRỌNG)
+Schema
+products
+id UUID PK
+name VARCHAR
+brand VARCHAR
+price BIGINT
+description TEXT
+created_at TIMESTAMP
+
+product_specs
+product_id UUID PK
+ram INT
+storage INT
+camera_mp INT
+battery_mah INT
+screen_size FLOAT
+chipset VARCHAR
+
+APIs
+GET /products
+{
+  "items": [
+    {
+      "id": "uuid",
+      "name": "iPhone 15",
+      "price": 25000000
+    }
+  ]
+}
+
+GET /products/{id}
+{
+  "id": "uuid",
+  "name": "iPhone 15",
+  "price": 25000000,
+  "specs": {
+    "ram": 8,
+    "storage": 256,
+    "camera_mp": 48
+  }
+}
+
+GET /products/search
+/products/search?brand=Samsung&price_lte=20000000
+
+
+
+3️⃣ CART SERVICE
+Schema
+carts
+user_id UUID PK
+created_at TIMESTAMP
+
+cart_items
+id UUID PK
+user_id UUID FK
+product_id UUID
+quantity INT
+
+APIs
+GET /cart
+{
+  "user_id": "uuid",
+  "items": [
+    {
+      "product_id": "uuid",
+      "quantity": 2
+    }
+  ]
+}
+
+POST /cart/items
+{
+  "product_id": "uuid",
+  "quantity": 1
+}
+
+{
+  "message": "Added to cart"
+}
+
+DELETE /cart/items/{productId}
+{
+  "message": "Removed"
+}
+
+4️⃣ INVENTORY SERVICE (NÊN CÓ – ĐIỆN THOẠI)
+Schema
+inventory
+product_id UUID PK
+stock INT
+updated_at TIMESTAMP
+
+APIs
+GET /inventory/{productId}
+{
+  "product_id": "uuid",
+  "stock": 12
+}
+
+POST /inventory/reserve
+{
+  "product_id": "uuid",
+  "quantity": 1
+}
+
+{
+  "reserved": true
+}
+
+5️⃣ ORDER SERVICE
+Schema
+orders
+id UUID PK
+user_id UUID
+status ENUM(PENDING, PAID, SHIPPED, CANCELLED)
+total_amount BIGINT
+created_at TIMESTAMP
+
+order_items
+id UUID PK
+order_id UUID
+product_id UUID
+quantity INT
+price BIGINT
+
+APIs
+POST /orders
+{
+  "items": [
+    {
+      "product_id": "uuid",
+      "quantity": 1
+    }
+  ]
+}
+
+{
+  "order_id": "uuid",
+  "status": "PENDING"
+}
+
+GET /orders/{id}
+{
+  "order_id": "uuid",
+  "status": "SHIPPED",
+  "items": []
+}
+
+6️⃣ PAYMENT SERVICE
+Schema
+payments
+id UUID PK
+order_id UUID
+method ENUM(COD, MOMO, ZALOPAY)
+status ENUM(PENDING, SUCCESS, FAILED)
+created_at TIMESTAMP
+
+APIs
+POST /payments/init
+{
+  "order_id": "uuid",
+  "method": "COD"
+}
+
+{
+  "payment_id": "uuid",
+  "status": "PENDING"
+}
+
+GET /payments/{orderId}/status
+{
+  "status": "SUCCESS"
+}

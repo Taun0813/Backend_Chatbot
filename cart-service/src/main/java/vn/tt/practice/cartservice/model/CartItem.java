@@ -5,21 +5,17 @@ import lombok.*;
 
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(
         name = "cart_items",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "product_id"})
-        }
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id"})
 )
+@Getter @Setter
+@NoArgsConstructor
 public class CartItem {
 
     @Id
-    @Column(nullable = false)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -30,15 +26,5 @@ public class CartItem {
 
     @Column(nullable = false)
     private int quantity;
-
-    CartItem(Cart cart, UUID productId, int quantity) {
-        this.id = UUID.randomUUID();
-        this.cart = cart;
-        this.productId = productId;
-        this.quantity = quantity;
-    }
-
-    void increase(int amount) {
-        this.quantity += amount;
-    }
 }
+

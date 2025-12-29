@@ -263,14 +263,21 @@ Response
 }
 
 🟫 7. CART SERVICE API
-GET cart
-POST cartadd
-{
-  product_id uuid,
-  quantity 1
-}
+GET    /cart
+POST   /cart/items
+PUT    /cart/items/{productId}
+DELETE /cart/items/{productId}
+DELETE /cart/clear
+
 
 DELETE cart{item_id}
+
+Inventory / Stock Service (bạn nên thêm)
+
+GET /inventory/{productId}
+POST /inventory/reserve
+POST /inventory/release
+
 🚀 PHẦN 3 — KẾT LUẬN
 
 Bạn đã có
