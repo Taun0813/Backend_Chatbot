@@ -45,11 +45,14 @@ public class User {
 
     @OneToMany(
             mappedBy = "user",
-            cascade = CascadeType.ALL,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
     private List<Address> addresses;
+
+    @Column(name = "is_active")
+    private boolean isActived = true;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

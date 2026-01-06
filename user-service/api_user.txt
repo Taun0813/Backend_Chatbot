@@ -1,0 +1,25 @@
+Auth
+POST /auth/register
+POST /auth/login
+POST /auth/logout
+POST /auth/refresh
+
+User
+GET  /users/me
+PUT  /users/me
+
+Address
+GET    /users/me/addresses
+POST   /users/me/addresses
+PUT    /users/me/addresses/{id}
+DELETE /users/me/addresses/{id}
+
+Admin
+GET /admin/users/{id}
+PUT /admin/users/{id}/role
+
+V. Mapping với API Gateway (ROLE-BASED)
+Path	Role
+/admin/**	ADMIN
+/users/**	USER
+/auth/**	Public
