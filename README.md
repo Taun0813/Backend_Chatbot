@@ -77,14 +77,35 @@ graph TB
 | Module Name | Port | Tech Stack | Trạng thái | Mô tả |
 |-------------|------|------------|------------|-------|
 | **discovery-service** | 8761 | Spring Eureka | ✅ Ready | Service Registry |
-| **api-gateway** | 8080 | Spring Cloud Gateway | ✅ Ready | Cổng vào duy nhất, Auth filter |
-| **user-service** | 8084 | Spring Boot | ✅ Ready | Quản lý User, Auth (JWT) |
+| **api-gateway** | 8080 | Spring Cloud Gateway | ✅ Ready | Cổng vào duy nhất, Auth filter, JWT Validation |
+| **user-service** | 8084 | Spring Boot | ✅ Ready | Quản lý User, Auth (JWT), Refresh Token |
 | **product-service** | 8082 | Spring Boot | ✅ Ready | Quản lý sản phẩm, Specs |
 | **payment-service** | TBD | Spring Boot | 🚧 In Progress | Tích hợp cổng thanh toán |
 | **order-service** | 8085 | Spring Boot | ⏳ Pending | Quản lý đơn hàng |
 | **warranty-service** | 8086 | Spring Boot | ⏳ Pending | Quản lý bảo hành điện tử |
 | **ai-agent-integration**| 8083 | Spring Boot | ⏳ Pending | Cầu nối Java <-> Python |
 | **python-ai-agent** | 8000 | FastAPI/LangChain | ⏳ Pending | Xử lý LLM, RAG Logic |
+
+---
+
+## 🔐 Authentication & Security Flow
+
+Hệ thống sử dụng cơ chế **Stateless Authentication** với JWT.
+
+1.  **Login Flow:**
+    *   Client gửi credentials -> `api-gateway` -> `user-service`.
+    *   `user-service` xác thực và trả về cặp `accessToken` (ngắn hạn) và `refreshToken` (dài hạn).
+    *   `refreshToken` được lưu trong Database của `user-service` để quản lý phiên đăng nhập.
+
+2.  **Request Flow:**
+    *   Client gửi request kèm Header `Authorization: Bearer <token>`.
+    *   `api-gateway` chặn request tại `JwtAuthenticationFilter`.
+    *   Gateway validate token (signature, expiration).
+    *   Nếu hợp lệ, Gateway trích xuất `userId`, `roles` và gắn vào Header (`X-User-Id`, `X-User-Roles`) trước khi forward xuống service đích.
+
+3.  **Refresh Token Flow:**
+    *   Khi `accessToken` hết hạn, Client gọi API `/users/refresh-token` tại `user-service`.
+    *   `user-service` kiểm tra `refreshToken` trong DB. Nếu còn hạn -> cấp `accessToken` mới.
 
 ---
 
@@ -116,32 +137,35 @@ docker-compose up -d
 
 ---
 
-## 📚 Database Schema (Tóm tắt)
+## 📚 API Documentation (Swagger)
 
-Hệ thống sử dụng **Database per Service** pattern.
+Hệ thống tích hợp Swagger UI để document API.
 
-1.  **User DB**: `users`, `addresses`
-2.  **Product DB**: `products`, `product_specs`, `categories`
-3.  **Order DB**: `orders`, `order_items`
-4.  **Warranty DB**: `warranties`, `warranty_claims`
-5.  **Payment DB**: `payments`
-
-*(Chi tiết xem file `structure.txt`)*
+*   **User Service:** `http://localhost:8084/swagger-ui/index.html`
+*   **Product Service:** `http://localhost:8082/swagger-ui/index.html`
+*   *(Các service khác sẽ được cập nhật sau)*
 
 ---
 
-## 🚀 Roadmap Phát triển
+## 🚀 Roadmap Phát triển & Next Steps
 
-### Phase 1: Foundation (Hiện tại)
+### Phase 1: Foundation (Đã hoàn thành)
 - [x] Thiết lập Project Structure (Parent POM).
 - [x] Cấu hình Service Discovery (Eureka).
-- [x] Cấu hình API Gateway.
-- [x] Implement User Service & Product Service cơ bản.
+- [x] **API Gateway**: Routing, JWT Filter, Global Exception Handling.
+- [x] **User Service**: Login, Register, Refresh Token, Swagger Integration.
 
-### Phase 2: Core Business Logic (Tiếp theo)
-- [ ] **Order Service**: Tạo đơn, quản lý trạng thái đơn hàng.
-- [ ] **Payment Service**: Xử lý thanh toán giả lập/VNPAY.
-- [ ] **Inter-service Communication**: Dùng Feign Client để Order gọi sang Product (check kho) và User.
+### Phase 2: Core Business Logic (Cần làm ngay)
+- [ ] **User Service**:
+    - [ ] Implement API `POST /users/refresh-token`.
+    - [ ] Implement API `POST /users/logout` (xóa refresh token).
+    - [ ] Implement API `GET /users/me` (lấy thông tin user từ token).
+- [ ] **Product Service**:
+    - [ ] Hoàn thiện CRUD sản phẩm.
+    - [ ] Tích hợp Swagger.
+- [ ] **Order Service**:
+    - [ ] Thiết kế DB Schema cho Order.
+    - [ ] Implement luồng tạo đơn hàng (gọi sang Product Service để check tồn kho).
 
 ### Phase 3: AI Integration (Quan trọng)
 - [ ] Xây dựng **Python AI Agent** (FastAPI).
