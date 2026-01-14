@@ -1,6 +1,7 @@
 package vn.tt.practice.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import vn.tt.practice.userservice.repository.AddressRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 import vn.tt.practice.userservice.security.JwtTokenProvider;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +30,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final RedisTemplate redisTemplate;
 
 
     // Register User
@@ -74,13 +77,16 @@ public class UserService {
         }
 
         String accessToken = jwtTokenProvider.generateAccessToken(user);
+        redisTemplate.opsForValue().set("at:" + accessToken, user.getId().toString(), Duration.ofHours(1));
+
         String refreshToken = refreshTokenService.create(user.getId());
 
         return new LoginResponse(
-                accessToken,
+                accessToken, // Cache
                 refreshToken,
                 "Bearer",
-                3600
+                3600,
+                user.getId()
         );
     }
 
@@ -98,7 +104,7 @@ public class UserService {
                     User user = userRepository.findById(userId)
                             .orElseThrow(() -> new RuntimeException("User not found"));
                     String token = jwtTokenProvider.generateAccessToken(user);
-                    return new LoginResponse(token, requestRefreshToken, "Bearer", 3600);
+                    return new LoginResponse(token, requestRefreshToken, "Bearer", 3600, userId);
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
