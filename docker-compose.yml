@@ -15,8 +15,9 @@ services:
 
   # Redis Cache
   redis:
-    image: redis:7-alpine
+    image: redis:latest
     container_name: ai-agent-redis
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
     networks:
@@ -244,7 +245,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       REDIS_HOST: redis

@@ -1,6 +1,11 @@
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
 #  cloud:
 #    gateway:
 #      server:
@@ -30,7 +35,6 @@ spring:
 #                - Path=/carts/**
 #              filters:
 #                - StripPrefix=1
-
 server:
   port: 8181
 eureka:

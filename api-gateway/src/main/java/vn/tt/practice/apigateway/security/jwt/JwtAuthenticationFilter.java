@@ -3,6 +3,7 @@ package vn.tt.practice.apigateway.security.jwt;
 import io.jsonwebtoken.Claims;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -16,9 +17,11 @@ import java.util.List;
 public class JwtAuthenticationFilter implements GatewayFilter {
 
     private final JwtTokenValidator jwtTokenValidator;
+    private final ReactiveRedisTemplate<String, String> redisTemplate;
 
-    public JwtAuthenticationFilter(JwtTokenValidator jwtTokenValidator) {
+    public JwtAuthenticationFilter(JwtTokenValidator jwtTokenValidator, ReactiveRedisTemplate<String, String> redisTemplate) {
         this.jwtTokenValidator = jwtTokenValidator;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -30,24 +33,33 @@ public class JwtAuthenticationFilter implements GatewayFilter {
         }
 
         String token = authHeader.substring(7);
-        try {
-            Claims claims = jwtTokenValidator.validate(token);
-            
-            if (jwtTokenValidator.isTokenExpired(claims)) {
-                 return Mono.error(new UnauthorizedException("Token expired"));
-            }
+        
+        // Check blacklist
+        return redisTemplate.hasKey("blacklist:" + token)
+                .flatMap(isBlacklisted -> {
+                    if (Boolean.TRUE.equals(isBlacklisted)) {
+                        return Mono.error(new UnauthorizedException("Token is blacklisted"));
+                    }
+                    
+                    try {
+                        Claims claims = jwtTokenValidator.validate(token);
+                        
+                        if (jwtTokenValidator.isTokenExpired(claims)) {
+                             return Mono.error(new UnauthorizedException("Token expired"));
+                        }
 
-            ServerHttpRequest request = exchange.getRequest()
-                    .mutate()
-                    .header("X-User-Id", claims.getSubject())
-                    .header("X-User-Roles", String.join(",", claims.get("roles", List.class)))
-                    .header("X-Internal-Gateway", "true")
-                    .build();
+                        ServerHttpRequest request = exchange.getRequest()
+                                .mutate()
+                                .header("X-User-Id", claims.getSubject())
+                                .header("X-User-Roles", String.join(",", claims.get("roles", List.class)))
+                                .header("X-Internal-Gateway", "true")
+                                .build();
 
-            return chain.filter(exchange.mutate().request(request).build());
+                        return chain.filter(exchange.mutate().request(request).build());
 
-        } catch (Exception e) {
-            return Mono.error(new UnauthorizedException("Invalid token"));
-        }
+                    } catch (Exception e) {
+                        return Mono.error(new UnauthorizedException("Invalid token"));
+                    }
+                });
     }
 }
