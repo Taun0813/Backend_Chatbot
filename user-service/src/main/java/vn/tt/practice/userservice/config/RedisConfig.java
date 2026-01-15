@@ -20,7 +20,7 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory("localhost", 6379);
+        return new org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory(redisHost, redisPort);
     }
 
     @Bean
