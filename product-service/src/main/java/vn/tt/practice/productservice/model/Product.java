@@ -35,7 +35,7 @@ public class Product {
     private BigDecimal price;
 
     @Column(nullable = false)
-    private Integer stock;
+    private Integer stock = 0;
 
     @Column(columnDefinition = "TEXT")
     private String shortDescription;

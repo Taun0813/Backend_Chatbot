@@ -12,9 +12,9 @@ public record ProductResponse(
         Integer stock,
         String shortDescription,
         String description,
-        String thumbnail,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        String thumbnail
+//        LocalDateTime createdAt,
+//        LocalDateTime updatedAt
 ) {}
 
 

@@ -1,7 +1,12 @@
 package vn.tt.practice.productservice.service;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import vn.tt.practice.productservice.dto.ProductRequest;
 import vn.tt.practice.productservice.dto.ProductResponse;
@@ -19,15 +24,20 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
+//    private final RedisTemplate redisTemplate;
 
     // GET /products
-    public List<ProductResponse> getAll() {
-        return productRepository.findAll()
-                .stream().map(this::toResponse)
-                .toList();
+    @Cacheable(
+            value = "products",
+            key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()"
+    )
+    public Page<ProductResponse> getAll(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     // GET /products/{id}
+    @Cacheable(value = "product", key = "#id")
     public ProductResponse getById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -35,6 +45,7 @@ public class ProductService {
     }
 
     // POST /products
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse create(ProductRequest request) {
         Product p = new Product();
         mapToEntity(p, request);
@@ -45,6 +56,8 @@ public class ProductService {
     }
 
     // PUT /products/{id}
+    @CachePut(value = "product", key = "#id")
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse update(UUID id, ProductRequest request) {
         Product p = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -56,6 +69,7 @@ public class ProductService {
     }
 
     // DELETE /products/{id}
+    @CacheEvict(value = {"product", "products"}, key = "#id", allEntries = true)
     public void delete(UUID id) {
         if (!productRepository.existsById(id)) {
             throw new RuntimeException("Product not found");
@@ -103,10 +117,9 @@ public class ProductService {
                 product.getStock(),
                 product.getShortDescription(),
                 product.getDescription(),
-                product.getThumbnail(),
-                product.getCreatedAt(),
-                product.getUpdatedAt()
+                product.getThumbnail()
+//                product.getCreatedAt(),
+//                product.getUpdatedAt()
         );
     }
 }
-
