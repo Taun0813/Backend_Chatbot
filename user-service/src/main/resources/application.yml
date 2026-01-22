@@ -1,3 +1,6 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: user-service
@@ -6,30 +9,28 @@ spring:
     username: ai_agent
     password: 123
     driver-class-name: org.postgresql.Driver
-
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
-        format_sql: true
-  data:
-    redis:
-      port: 6379
-      host: localhost
-
-server:
-  port: 8085
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+
 jwt:
-  secret: my-super-secret-key-which-is-at-least-32-bytes!!
-  access-token-expiration: 900000
-  refresh-token-expiration: 604800000
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 86400000 # 1 day
+  refresh-expiration: 604800000 # 7 days
+
+logging:
+  level:
+    org.springframework.web: INFO
+    com.ecommerce.user: DEBUG

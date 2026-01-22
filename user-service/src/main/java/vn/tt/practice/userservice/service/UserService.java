@@ -1,6 +1,8 @@
 package vn.tt.practice.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,7 +43,7 @@ public class UserService {
                     .phone(request.getPhone())
                     .fullName(request.getFullName())
                     .password(passwordEncoder.encode(request.getPassword()))
-                    .role(UserRole.USER)
+                    .role(UserRole.ROLE_USER)
                     .isActived(true)
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -50,7 +52,7 @@ public class UserService {
                     .email(request.getEmail())
                     .phone(request.getPhone())
                     .fullName(request.getFullName())
-                    .role("USER")
+                    .role("ROLE_USER")
                     .isActived(true)
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -234,6 +236,12 @@ public class UserService {
         }
 
         addressRepository.delete(address);
+    }
+
+    //Get All Users (Admin)
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(this::mapToUserResponse);
     }
 
     private UserResponse mapToUserResponse(User user) {

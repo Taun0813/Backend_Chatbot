@@ -1,0 +1,24 @@
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_profiles (
+    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    phone VARCHAR(20),
+    address VARCHAR(255)
+);
+
+CREATE TABLE refresh_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expiry_date TIMESTAMP NOT NULL
+);
