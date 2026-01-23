@@ -1,24 +1,11 @@
-version: "3.8"
+FROM eclipse-temurin:21-jre-alpine
 
-services:
-  discovery-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: discovery-service:latest
-    container_name: discovery-service
-    ports:
-      - "8761:8761"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    depends_on:
-      - eureka-server
+WORKDIR /app
 
-  eureka-server:
-    image: eurekaserver:latest
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
+COPY target/*.jar app.jar
+
+EXPOSE 8761
+
+ENV SPRING_PROFILES_ACTIVE=docker
+
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
