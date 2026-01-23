@@ -1,19 +1,13 @@
-server:
-  port: 8081
-
 spring:
   datasource:
-    url: jdbc:postgresql://postgresql:5432/ai_agent
-    username: ai_agent
-    password: 123
+    url: jdbc:postgresql://postgresql:5432/ai_agent_db
+  data:
+    redis:
+      host: redis
+  rabbitmq:
+    host: rabbitmq
 
 eureka:
-  instance:
-    hostname: user-service
-    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-service:8761/eureka/
-
-jwt:
-  secret: ${JWT_SECRET}
