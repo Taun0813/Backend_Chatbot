@@ -1,4 +1,11 @@
-FROM ubuntu:latest
-LABEL authors="HOME"
+FROM eclipse-temurin:21-jre-alpine
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /app
+
+COPY target/*.jar app.jar
+
+EXPOSE 8181
+
+ENV SPRING_PROFILES_ACTIVE=docker
+
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]

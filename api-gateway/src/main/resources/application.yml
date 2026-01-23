@@ -1,48 +1,85 @@
+server:
+  port: 8181
+
 spring:
   application:
     name: api-gateway
+
+  main:
+    web-application-type: reactive
+
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-#  cloud:
-#    gateway:
-#      server:
-#        webflux:
-#          routes:
-#            - id: product-service
-#              uri: lb://product-service
-#              predicates:
-#                - Path=/products/**
-#              filters:
-#                - StripPrefix=1
-#            - id: user-service
-#              uri: lb://user-service
-#              predicates:
-#                - Path=/users/**
-#              filters:
-#                - StripPrefix=1
-#            - id: order-service
-#              uri: lb://order-service
-#              predicates:
-#                - Path=/order/**
-#              filters:
-#                - StripPrefix=1
-#            - id: cart-service
-#              uri: lb://cart-service
-#              predicates:
-#                - Path=/carts/**
-#              filters:
-#                - StripPrefix=1
-server:
-  port: 8181
+      host: localhost
+      port: 6379
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          httpclient:
+            connect-timeout: 1000
+            response-timeout: 5s
+
 eureka:
   client:
     service-url:
-        defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 jwt:
-  secret: my-super-secret-key-which-is-at-least-32-bytes!!
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    vn.tt.practice.apigateway: DEBUG
+    io.github.resilience4j: INFO
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      userServiceCircuitBreaker: { baseConfig: default }
+      productServiceCircuitBreaker: { baseConfig: default }
+      cartServiceCircuitBreaker: { baseConfig: default }
+      orderServiceCircuitBreaker: { baseConfig: default }
+      inventoryServiceCircuitBreaker: { baseConfig: default }
+      paymentServiceCircuitBreaker: { baseConfig: default }
+      warrantyServiceCircuitBreaker: { baseConfig: default }
+      recommendationServiceCircuitBreaker: { baseConfig: default }
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s

@@ -33,17 +33,17 @@ public class JwtAuthenticationFilter implements GatewayFilter {
         }
 
         String token = authHeader.substring(7);
-        
+
         // Check blacklist
         return redisTemplate.hasKey("blacklist:" + token)
                 .flatMap(isBlacklisted -> {
                     if (Boolean.TRUE.equals(isBlacklisted)) {
                         return Mono.error(new UnauthorizedException("Token is blacklisted"));
                     }
-                    
+
                     try {
                         Claims claims = jwtTokenValidator.validate(token);
-                        
+
                         if (jwtTokenValidator.isTokenExpired(claims)) {
                              return Mono.error(new UnauthorizedException("Token expired"));
                         }
