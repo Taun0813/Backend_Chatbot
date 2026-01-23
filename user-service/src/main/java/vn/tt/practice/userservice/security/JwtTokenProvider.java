@@ -32,4 +32,27 @@ public class JwtTokenProvider {
                 .signWith(key)
                 .compact();
     }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String getUserIdFromToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token).getBody().getSubject();
+    }
+
+    public List<String> getRolesFromToken(String token) {
+        return (List<String>) Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token).getBody().get("roles");
+    }
+
+    public long getExpiration() {
+        return expiration;
+    }
 }

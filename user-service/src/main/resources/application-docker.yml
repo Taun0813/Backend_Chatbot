@@ -6,11 +6,14 @@ spring:
     url: jdbc:postgresql://postgresql:5432/ai_agent
     username: ai_agent
     password: 123
-  jpa:
-    hibernate:
-      ddl-auto: validate
 
 eureka:
+  instance:
+    hostname: user-service
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-service:8761/eureka/
+
+jwt:
+  secret: ${JWT_SECRET}

@@ -4,17 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.tt.practice.userservice.entity.Role;
-
-import java.util.UUID;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponse {
-    private UUID id;
+public class RegisterRequest {
     private String email;
+    private String password;
     private String fullName;
-    private Role role;
+    private String role; // Optional, defaults to USER
 }
