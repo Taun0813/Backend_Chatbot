@@ -1,11 +1,17 @@
 package vn.tt.practice.userservice.service;
 
-import vn.tt.practice.userservice.dto.UserDTO;
-import vn.tt.practice.userservice.dto.UserProfileDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import vn.tt.practice.userservice.dto.UserProfileUpdateRequest;
+import vn.tt.practice.userservice.dto.UserResponse;
+
+import java.util.UUID;
 
 public interface UserService {
-    UserDTO getCurrentUser(Long userId);
-    UserDTO updateUserProfile(Long userId, UserProfileDTO request);
+    UserResponse getCurrentUser(Long userId);
+    UserResponse updateUserProfile(Long userId, UserProfileUpdateRequest request);
     // Admin methods
-    UserDTO getUserById(Long id);
+    UserResponse getUserById(Long id);
+    Page<UserResponse> getAllUsers(Pageable pageable);
+    UserResponse updateUserRole(Long userId, String role);
 }

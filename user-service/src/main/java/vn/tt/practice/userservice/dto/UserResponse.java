@@ -4,19 +4,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.tt.practice.userservice.entity.Role;
-
+import java.util.UUID;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserDTO {
+public class UserResponse {
     private Long id;
     private String email;
-    private Role role;
-    private Boolean isActive;
+    private String fullName;
+    private String phone;
+    private String role;
     private LocalDateTime createdAt;
-    private UserProfileDTO profile;
+    private Boolean actived;
 }

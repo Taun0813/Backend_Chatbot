@@ -6,35 +6,63 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.tt.practice.userservice.dto.LoginRequest;
-import vn.tt.practice.userservice.dto.LoginResponse;
-import vn.tt.practice.userservice.dto.RegisterRequest;
+import vn.tt.practice.userservice.dto.*;
 import vn.tt.practice.userservice.service.AuthService;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/users/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Authentication APIs")
+@Tag(name = "User Controller", description = "APIs for user authentication and management")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
-    @Operation(summary = "Register new user")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    @Operation(summary = "Register user")
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody UserRegisterRequest request) {
         authService.register(request);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
+                .build());
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    @Operation(summary = "Login user")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
+                .data(response)
+                .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
+                .build());
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/refresh-token")
     @Operation(summary = "Refresh token")
-    public ResponseEntity<LoginResponse> refresh(@RequestParam String refreshToken) {
-        return ResponseEntity.ok(authService.refreshToken(refreshToken));
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        LoginResponse response = authService.refreshToken(refreshToken);
+        return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
+                .data(response)
+                .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
+                .build());
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout user")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        
+        if (accessToken != null && userId != null) {
+            authService.logout(accessToken, userId);
+        }
+        
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
+                .build());
     }
 }

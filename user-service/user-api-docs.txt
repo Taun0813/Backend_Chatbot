@@ -1,19 +1,13 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "User Service API",
-    "description": "API documentation for User Service",
-    "version": "1.0.0"
+    "title": "OpenAPI definition",
+    "version": "v0"
   },
   "servers": [
     {
       "url": "http://localhost:8081",
       "description": "Generated server url"
-    }
-  ],
-  "security": [
-    {
-      "bearerAuth": []
     }
   ],
   "tags": [
@@ -29,7 +23,6 @@
           "User Controller"
         ],
         "summary": "Update user role (Admin)",
-        "description": "Update user role (Admin only)",
         "operationId": "updateUserRole",
         "parameters": [
           {
@@ -37,8 +30,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -75,7 +68,6 @@
           "User Controller"
         ],
         "summary": "Get current user profile",
-        "description": "Get profile of the currently logged in user",
         "operationId": "getCurrentUser",
         "parameters": [
           {
@@ -83,8 +75,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -106,7 +98,6 @@
           "User Controller"
         ],
         "summary": "Update current user profile",
-        "description": "Update profile of the currently logged in user",
         "operationId": "updateCurrentUser",
         "parameters": [
           {
@@ -114,8 +105,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -149,7 +140,6 @@
           "User Controller"
         ],
         "summary": "Update address",
-        "description": "Update an existing address",
         "operationId": "updateAddress",
         "parameters": [
           {
@@ -157,8 +147,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -166,8 +156,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -199,7 +189,6 @@
           "User Controller"
         ],
         "summary": "Delete address",
-        "description": "Delete an existing address",
         "operationId": "deleteAddress",
         "parameters": [
           {
@@ -207,8 +196,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -216,8 +205,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -241,7 +230,6 @@
           "User Controller"
         ],
         "summary": "Get user addresses",
-        "description": "Get list of addresses for the current user",
         "operationId": "getUserAddresses",
         "parameters": [
           {
@@ -249,8 +237,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -272,7 +260,6 @@
           "User Controller"
         ],
         "summary": "Add new address",
-        "description": "Add a new address for the current user",
         "operationId": "addAddress",
         "parameters": [
           {
@@ -280,8 +267,8 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -315,7 +302,6 @@
           "User Controller"
         ],
         "summary": "Register user",
-        "description": "Register a new user",
         "operationId": "register",
         "requestBody": {
           "content": {
@@ -333,7 +319,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseUserResponse"
+                  "$ref": "#/components/schemas/ApiResponseVoid"
                 }
               }
             }
@@ -347,7 +333,6 @@
           "User Controller"
         ],
         "summary": "Refresh token",
-        "description": "Get new access token using refresh token",
         "operationId": "refreshToken",
         "requestBody": {
           "content": {
@@ -382,13 +367,20 @@
           "User Controller"
         ],
         "summary": "Logout user",
-        "description": "Logout user and invalidate refresh token",
         "operationId": "logout",
         "parameters": [
           {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "X-User-Id",
             "in": "header",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -415,7 +407,6 @@
           "User Controller"
         ],
         "summary": "Login user",
-        "description": "Authenticate user and return access token & refresh token",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -447,27 +438,14 @@
           "User Controller"
         ],
         "summary": "Get all users (Admin)",
-        "description": "Get paginated list of all users (Admin only)",
         "operationId": "getAllUsers",
         "parameters": [
           {
-            "name": "page",
+            "name": "pageable",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 0
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 8
+              "$ref": "#/components/schemas/Pageable"
             }
           }
         ],
@@ -491,7 +469,6 @@
           "User Controller"
         ],
         "summary": "Get user by ID (Admin)",
-        "description": "Get user profile by ID (Admin only)",
         "operationId": "getUserById",
         "parameters": [
           {
@@ -499,8 +476,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -547,8 +524,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "type": "integer",
+            "format": "int64"
           },
           "email": {
             "type": "string"
@@ -583,11 +560,6 @@
         }
       },
       "AddressRequest": {
-        "required": [
-          "addressLine",
-          "fullName",
-          "phone"
-        ],
         "type": "object",
         "properties": {
           "fullName": {
@@ -617,8 +589,8 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "type": "integer",
+            "format": "int64"
           },
           "fullName": {
             "type": "string"
@@ -678,6 +650,17 @@
           }
         }
       },
+      "ApiResponseVoid": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
       "ApiResponseLoginResponse": {
         "type": "object",
         "properties": {
@@ -706,19 +689,8 @@
             "format": "int64"
           },
           "userId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "ApiResponseVoid": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/Meta"
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -737,6 +709,27 @@
           }
         }
       },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ApiResponsePageUserResponse": {
         "type": "object",
         "properties": {
@@ -751,13 +744,13 @@
       "PageUserResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "size": {
             "type": "integer",
@@ -804,16 +797,16 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "paged": {
-            "type": "boolean"
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "paged": {
+            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
@@ -847,14 +840,6 @@
             "$ref": "#/components/schemas/Meta"
           }
         }
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "name": "bearerAuth",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
       }
     }
   }

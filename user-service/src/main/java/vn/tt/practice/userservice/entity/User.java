@@ -38,4 +38,7 @@ public class User extends BaseEntity {
 
     @Column(name = "updated_by")
     private String updatedBy;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UserProfile userProfile;
 }

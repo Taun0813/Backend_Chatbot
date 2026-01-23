@@ -1,11 +1,14 @@
 package vn.tt.practice.userservice.service;
 
-import vn.tt.practice.userservice.dto.LoginRequest;
 import vn.tt.practice.userservice.dto.LoginResponse;
-import vn.tt.practice.userservice.dto.RegisterRequest;
+import vn.tt.practice.userservice.dto.UserLoginRequest;
+import vn.tt.practice.userservice.dto.UserRegisterRequest;
+
+import java.util.UUID;
 
 public interface AuthService {
-    void register(RegisterRequest request);
-    LoginResponse login(LoginRequest request);
+    void register(UserRegisterRequest request);
+    LoginResponse login(UserLoginRequest request);
     LoginResponse refreshToken(String refreshToken);
+    void logout(String accessToken, UUID userId);
 }

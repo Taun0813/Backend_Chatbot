@@ -1,37 +1,42 @@
 package vn.tt.practice.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.tt.practice.userservice.dto.LoginRequest;
+import vn.tt.practice.userservice.config.JwtConfig;
 import vn.tt.practice.userservice.dto.LoginResponse;
-import vn.tt.practice.userservice.dto.RegisterRequest;
+import vn.tt.practice.userservice.dto.UserLoginRequest;
+import vn.tt.practice.userservice.dto.UserRegisterRequest;
 import vn.tt.practice.userservice.entity.Role;
 import vn.tt.practice.userservice.entity.User;
-import vn.tt.practice.userservice.entity.UserProfile;
-import vn.tt.practice.userservice.repository.UserProfileRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 import vn.tt.practice.userservice.security.CustomUserDetails;
 import vn.tt.practice.userservice.security.JwtTokenProvider;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtConfig jwtConfig;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final String BLACKLIST_PREFIX = "bl_";
 
     @Override
     @Transactional
-    public void register(RegisterRequest request) {
+    public void register(UserRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
@@ -42,67 +47,65 @@ public class AuthServiceImpl implements AuthService {
                 .role(Role.ROLE_USER)
                 .isActive(true)
                 .build();
-        User savedUser = userRepository.save(user);
 
-        UserProfile profile = UserProfile.builder()
-                .user(savedUser)
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .build();
-        userProfileRepository.save(profile);
+        userRepository.save(user);
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(UserLoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtTokenProvider.generateToken(authentication);
+        String accessToken = jwtTokenProvider.generateToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
         
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        User user = userDetails.getUser();
 
         return LoginResponse.builder()
-                .token(jwt)
+                .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .id(user.getId())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .type("Bearer")
+                .tokenType("Bearer")
+                .expiresIn(jwtConfig.getExpiration())
+                .userId(userDetails.getUser().getId())
                 .build();
     }
 
     @Override
     public LoginResponse refreshToken(String refreshToken) {
-        // Simple logic: Verify signature, get ID, load user, generate new token
-        // In real world we should verify if refresh token actually belongs to user in DB or Redis
-        try {
-            String userId = jwtTokenProvider.getUserNameFromJwtToken(refreshToken);
-            User user = userRepository.findById(Long.parseLong(userId))
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-            
-            // Manually re-create detail to generate token
-            CustomUserDetails customUserDetails = new CustomUserDetails(user);
-            // We can't use Authentication object easily here without full re-auth flow or mocking it
-            // So we override generateToken to accept user directly or just create a dummy auth object?
-            // Let's refactor generateToken to be flexible? Or just use the map overload.
-            
-            String newAccessToken = jwtTokenProvider.generateToken(new java.util.HashMap<>(), user.getId(), user.getRole().name());
-            String newRefreshToken = refreshToken; // Rotate or keep? Keep for now.
+        // Simple implementation: extract user from token and issue new access token
+        // In real world, verify refresh token signature and expiration
+        String userIdStr = jwtTokenProvider.getUserNameFromJwtToken(refreshToken);
+        Long userId = Long.parseLong(userIdStr);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // We need to construct a valid Authentication object to pass to generateToken
+        // Or overload generateToken to accept User
+        // Since JwtTokenProvider depends on Authentication, let's look at it.
+        // It has generateToken(Map, UUID, String).
+        
+        String accessToken = jwtTokenProvider.generateToken(new java.util.HashMap<>(), user.getId(), user.getRole().name());
+        
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(jwtConfig.getExpiration())
+                .userId(user.getId())
+                .build();
+    }
 
-            return LoginResponse.builder()
-                    .token(newAccessToken)
-                    .refreshToken(newRefreshToken)
-                    .id(user.getId())
-                    .email(user.getEmail())
-                    .role(user.getRole().name())
-                    .type("Bearer")
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid refresh token");
+    @Override
+    public void logout(String accessToken, UUID userId) {
+        // Invalidate access token (add to blacklist)
+        // Access token usually comes with "Bearer " prefix, strip it if needed
+        if (accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.substring(7);
         }
+        
+        long expiration = jwtConfig.getExpiration(); // Or calculate remaining time
+        redisTemplate.opsForValue().set(BLACKLIST_PREFIX + accessToken, userId.toString(), expiration, TimeUnit.MILLISECONDS);
     }
 }
