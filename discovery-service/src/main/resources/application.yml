@@ -15,21 +15,5 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   server:
     enable-self-preservation: false
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-
-logging:
-  level:
-    com.netflix.eureka: INFO
-    com.netflix.discovery: INFO
+    eviction-interval-timer-in-ms: 4000
+# docker
