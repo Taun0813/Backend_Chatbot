@@ -2,53 +2,50 @@ package vn.tt.practice.apigateway.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
-@Slf4j
 @Component
 public class JwtUtil {
 
-    private final SecretKey secretKey;
+    @Value("${jwt.secret}")
+    private String secret;
 
-    public JwtUtil(@Value("${jwt.secret}") String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    private SecretKey getSignKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Claims validateToken(String token) {
-        try {
-            return Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-        } catch (Exception e) {
-            log.error("JWT validation failed: {}", e.getMessage());
-            throw new RuntimeException("Invalid JWT token");
-        }
+    public void validateToken(String token) {
+        Jwts.parser().verifyWith(getSignKey()).build().parseSignedClaims(token);
     }
 
-    public boolean isTokenExpired(Claims claims) {
-        return claims.getExpiration().before(new Date());
-    }
-
-    public String getUserId(Claims claims) {
-        return claims.getSubject();
-    }
-
-    public String getEmail(Claims claims) {
-        return claims.get("email", String.class);
+    public String extractUserId(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> getRoles(Claims claims) {
-        return claims.get("roles", List.class);
+    public List<String> extractRoles(String token) {
+        return extractClaim(token, claims -> claims.get("roles", List.class));
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSignKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
