@@ -201,9 +201,7 @@ services:
   ai-agent-discovery:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: discovery-service
+      dockerfile: infrastructure/docker/Dockerfile.discovery
     container_name: ai-agent-discovery
     ports:
       - "8761:8761"
@@ -221,9 +219,7 @@ services:
   ai-agent-gateway:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: api-gateway
+      dockerfile: infrastructure/docker/Dockerfile.gateway
     container_name: ai-agent-gateway
     ports:
       - "8080:8080"
@@ -238,14 +234,12 @@ services:
     depends_on:
       - ai-agent-discovery
 
-  # Inventory Service
-  inventory-service:
+  # Core Service
+  ai-agent-core:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: inventory-service
-    container_name: inventory-service
+      dockerfile: infrastructure/docker/Dockerfile.core
+    container_name: ai-agent-core
     ports:
       - "8081:8081"
     environment:
@@ -264,24 +258,11 @@ services:
       - postgresql
       - redis
 
-  # Inventory Service (Renaming Core to Inventory as per pom.xml modules if it matches, or keeping it standalone. Assuming Core was conceptual but Inventory is actual module)
-  # BUT WAIT, pom.xml has 'inventory-service'. docker-compose had 'ai-agent-core'. 
-  # Let's look at pom again? No, I'll stick to 'inventory-service' if that's what user likely meant, 
-  # BUT I should check if 'ai-agent-core' refers to a specific folder. 
-  # Looking at file list: inventory-service exists. core-service does NOT exist. 
-  # So 'ai-agent-core' in docker-compose probably maps to 'inventory-service' or is a mistake.
-  # Let's map it to 'inventory-service' based on context or just create a block for inventory 
-  # and comment out core if it's invalid.
-  # Actually, let's assume 'ai-agent-core' was a placeholder or old name. I will comment it out or replace it?
-  # Better: I will Update Product Service first and others I am sure of.
-  
   # Product Service
   product-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: product-service
+      dockerfile: infrastructure/docker/Dockerfile.product
     container_name: product-service
     ports:
       - "8082:8082"
@@ -326,9 +307,7 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: user-service
+      dockerfile: infrastructure/docker/Dockerfile.user
     container_name: user-service
     ports:
       - "8084:8084"
@@ -352,9 +331,7 @@ services:
   order-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: order-service
+      dockerfile: infrastructure/docker/Dockerfile.order
     container_name: order-service
     ports:
       - "8085:8085"
@@ -378,9 +355,7 @@ services:
   warranty-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: warranty-service
+      dockerfile: infrastructure/docker/Dockerfile.warranty
     container_name: warranty-service
     ports:
       - "8086:8086"
@@ -404,9 +379,7 @@ services:
   recommendation-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: recommendation-service
+      dockerfile: infrastructure/docker/Dockerfile.recommendation
     container_name: recommendation-service
     ports:
       - "8087:8087"
@@ -414,28 +387,6 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
       AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis_password
-    networks:
-      - ai-agent-network
-    depends_on:
-      - ai-agent-discovery
-      - redis
-
-  # Cart Service
-  cart-service:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile
-      args:
-        MODULE_NAME: cart-service
-    container_name: cart-service
-    ports:
-      - "8089:8089"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis_password
