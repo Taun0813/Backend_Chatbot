@@ -201,7 +201,9 @@ services:
   ai-agent-discovery:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.discovery
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: discovery-service
     container_name: ai-agent-discovery
     ports:
       - "8761:8761"
@@ -219,7 +221,9 @@ services:
   ai-agent-gateway:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.gateway
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: api-gateway
     container_name: ai-agent-gateway
     ports:
       - "8080:8080"
@@ -262,7 +266,9 @@ services:
   product-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.product
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: product-service
     container_name: product-service
     ports:
       - "8082:8082"
@@ -307,7 +313,9 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.user
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: user-service
     container_name: user-service
     ports:
       - "8084:8084"
@@ -331,7 +339,9 @@ services:
   order-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.order
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: order-service
     container_name: order-service
     ports:
       - "8085:8085"
@@ -355,7 +365,9 @@ services:
   warranty-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.warranty
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: warranty-service
     container_name: warranty-service
     ports:
       - "8086:8086"
@@ -379,7 +391,9 @@ services:
   recommendation-service:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.recommendation
+      dockerfile: infrastructure/docker/Dockerfile
+      args:
+        MODULE_NAME: recommendation-service
     container_name: recommendation-service
     ports:
       - "8087:8087"
