@@ -11,7 +11,6 @@ services:
         value: prod
       - key: SERVER_PORT
         value: 8761
-    buildArgs:
       - key: MODULE_NAME
         value: discovery-service
 
@@ -29,7 +28,6 @@ services:
         value: 8080
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: api-gateway
 
@@ -47,7 +45,6 @@ services:
         value: 8082
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: product-service
 
@@ -65,7 +62,6 @@ services:
         value: 8084
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: user-service
 
@@ -83,7 +79,6 @@ services:
         value: 8085
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: order-service
 
@@ -101,7 +96,6 @@ services:
         value: 8086
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: warranty-service
 
@@ -119,6 +113,5 @@ services:
         value: 8087
       - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-    buildArgs:
       - key: MODULE_NAME
         value: recommendation-service
