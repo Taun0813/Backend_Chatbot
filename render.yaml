@@ -1,0 +1,128 @@
+services:
+  # Discovery Service
+  - type: web
+    name: discovery-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+    buildArgs:
+      - key: MODULE_NAME
+        value: discovery-service
+
+  # API Gateway
+  - type: web
+    name: api-gateway
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: api-gateway
+
+  # Product Service
+  - type: web
+    name: product-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: product-service
+
+  # User Service
+  - type: web
+    name: user-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: user-service
+
+  # Order Service
+  - type: web
+    name: order-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: order-service
+
+  # Warranty Service
+  - type: web
+    name: warranty-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: warranty-service
+
+  # Recommendation Service
+  - type: web
+    name: recommendation-service
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: infrastructure/docker/Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        fromService:
+          type: web
+          name: discovery-service
+          property: url
+    buildArgs:
+      - key: MODULE_NAME
+        value: recommendation-service
