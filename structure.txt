@@ -1,0 +1,298 @@
+✅ PHẦN 1 — DATABASE SCHEMA (FULL)
+
+Mỗi service có database riêng (theo chuẩn microservices).
+
+🟦 1. USER SERVICE DATABASE
+Bảng users
+Field	Type	Description
+id	UUID (PK)	User ID
+email	VARCHAR(120) UNIQUE	Login email
+password	VARCHAR(255)	Hashed password
+full_name	VARCHAR(120)	User name
+phone	VARCHAR(20)	Phone number
+role	VARCHAR(20)	ADMIN  USER
+created_at	TIMESTAMP	Auto
+updated_at	TIMESTAMP	Auto
+Bảng addresses
+Field	Type	Description
+id	UUID PK	Address ID
+user_id	UUID FK → users(id)	Owner
+full_name	VARCHAR(120)	Receiver name
+phone	VARCHAR(20)	Receiver phone
+address_line	VARCHAR(255)	Address text
+city	VARCHAR(100)	
+district	VARCHAR(100)	
+ward	VARCHAR(100)	
+is_default	BOOLEAN	
+created_at	TIMESTAMP	
+🟩 2. PRODUCT SERVICE DATABASE
+Bảng products
+Field	Type	Description
+id	UUID PK	
+name	VARCHAR(255)	
+brand	VARCHAR(100)	
+price	DECIMAL(12,2)	
+stock	INT	
+short_description	TEXT	
+description	TEXT	
+thumbnail	VARCHAR(255)	
+created_at	TIMESTAMP	
+updated_at	TIMESTAMP	
+Bảng product_specs
+Field	Type
+id	UUID PK
+product_id	UUID FK
+cpu	VARCHAR(255)
+ram	VARCHAR(50)
+storage	VARCHAR(50)
+battery	VARCHAR(50)
+screen	VARCHAR(255)
+camera	VARCHAR(255)
+os	VARCHAR(50)
+created_at	TIMESTAMP
+Bảng categories
+
+ Field  Type 
+ id  UUID PK 
+ name  VARCHAR(255) 
+
+Bảng product_categories
+
+ product_id  UUID FK 
+ category_id  UUID FK 
+
+🟧 3. ORDER SERVICE DATABASE
+Bảng orders
+Field	Type	Description
+id	UUID PK	
+user_id	UUID	
+total_price	DECIMAL(12,2)	
+payment_status	VARCHAR(20)	PENDING  PAID  FAILED
+order_status	VARCHAR(20)	CREATED  CONFIRMED  SHIPPING  COMPLETED  CANCELLED
+created_at	TIMESTAMP	
+updated_at	TIMESTAMP	
+Bảng order_items
+Field	Type
+id	UUID PK
+order_id	UUID FK
+product_id	UUID
+quantity	INT
+price	DECIMAL(12,2)
+🟥 4. PAYMENT SERVICE DATABASE
+Bảng payments
+Field	Type
+id	UUID PK
+order_id	UUID
+payment_method	VARCHAR(50)
+status	VARCHAR(20)
+transaction_id	VARCHAR(255)
+amount	DECIMAL(12,2)
+created_at	TIMESTAMP
+🟨 5. WARRANTY SERVICE DATABASE
+Bảng warranties
+Field	Type
+id	UUID PK
+order_id	UUID
+product_id	UUID
+user_id	UUID
+warranty_status	VARCHAR(30)
+expiration_date	DATE
+created_at	TIMESTAMP
+Bảng warranty_claims
+Field	Type
+id	UUID PK
+warranty_id	UUID
+issue_description	TEXT
+status	VARCHAR(20)
+created_at	TIMESTAMP
+🟪 6. RECOMMENDATION SERVICE DATABASE
+
+(Chỉ cache – ít bảng)
+
+Bảng recommendations_cache
+Field	Type
+id	UUID PK
+query	TEXT
+result	JSONB
+created_at	TIMESTAMP
+🟫 7. CART SERVICE DATABASE
+Bảng carts
+
+ user_id  UUID PK 
+ created_at  TIMESTAMP 
+
+Bảng cart_items
+
+ id  UUID 
+ user_id  UUID 
+ product_id  UUID 
+ quantity  INT 
+
+🚀 PHẦN 2 — API DOCUMENTATION (FULL SPEC)
+
+API được viết theo chuẩn REST. Dùng OpenAPI 3.0 khi implement.
+
+🟦 1. USER SERVICE API
+POST authregister
+
+Request
+
+{
+  email test@gmail.com,
+  password 123456,
+  fullname Test
+}
+
+
+Response
+
+{
+  message REGISTER_SUCCESS
+}
+
+POST authlogin
+
+Response
+
+{
+  token jwt-token,
+  user { ... }
+}
+
+GET usersme
+
+→ Lấy thông tin người dùng hiện tại.
+
+POST usersaddress
+
+→ Add địa chỉ.
+
+Body
+
+{
+  full_name Nguyen A,
+  phone 0123,
+  address_line 123 ABC,
+  city HCM
+}
+
+🟩 2. PRODUCT SERVICE API
+GET products
+
+Trả về list sản phẩm.
+
+GET products{id}
+POST products (Admin)
+
+Tạo sản phẩm.
+
+PUT products{id}
+DELETE products{id}
+GET productssearchquery=iphone
+GET products{id}specs
+🟧 3. ORDER SERVICE API
+POST orders
+
+Body
+
+{
+  user_id 123,
+  items [
+    { product_id p1, quantity 2 }
+  ]
+}
+
+
+Response
+
+{
+  order_id uuid,
+  total 12000000,
+  status CREATED
+}
+
+GET orders{id}
+PUT orders{id}cancel
+🟥 4. PAYMENT SERVICE API
+POST paymentcreate
+{
+  order_id uuid,
+  method VNPAY
+}
+
+
+Response
+
+{
+  payment_url https...
+}
+
+POST paymentcallback
+
+→ Payment gateway callback
+
+🟨 5. WARRANTY SERVICE API
+GET warranty{order_id}
+POST warrantyclaim
+{
+  order_id uuid,
+  issue Screen cracked
+}
+
+🟪 6. RECOMMENDATION SERVICE API
+
+📌 Dùng bởi AI Agent để lọc sản phẩm website từ dataset
+
+POST airecommend
+
+Body
+
+{
+  results [
+    { brand OnePlus, model 9R, score 0.92 }
+  ]
+}
+
+
+Response
+
+{
+  matches [
+    { product_id uuid, name OnePlus 9R, price 12000000 }
+  ]
+}
+
+🟫 7. CART SERVICE API
+GET    /cart
+POST   /cart/items
+PUT    /cart/items/{productId}
+DELETE /cart/items/{productId}
+DELETE /cart/clear
+
+
+DELETE cart{item_id}
+
+Inventory / Stock Service (bạn nên thêm)
+
+GET /inventory/{productId}
+POST /inventory/reserve
+POST /inventory/release
+
+🚀 PHẦN 3 — KẾT LUẬN
+
+Bạn đã có
+
+✔ Database chuẩn cho toàn bộ microservices
+✔ Full API Docs (REST spec)
+✔ Flow và chức năng inline cho từng service
+✔ Chuẩn Spring Boot → PostgreSQL → Redis → Kafka
+✔ Dùng được ngay để code backend hoàn chỉnh
+❓ Bạn muốn mình làm tiếp phần nào
+
+Tôi có thể tiếp tục
+
+🔹 Tạo Mermaid ERD diagram cho toàn bộ database
+🔹 Viết file OpenAPI 3.0 YAML hoàn chỉnh
+🔹 Generate skeleton code Spring Boot cho từng service
+🔹 Viết Chương 3 (Thiết kế hệ thống) cho luận văn
+🔹 Tạo docker-compose.yml cho tất cả services
