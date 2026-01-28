@@ -187,7 +187,7 @@ services:
     image: adminer:4.8.1
     container_name: ai-agent-adminer
     ports:
-      - "8080:8080"
+      - "8090:8090"
     networks:
       - ai-agent-network
     depends_on:
@@ -239,28 +239,28 @@ services:
       - ai-agent-discovery
 
   # Core Service
-  ai-agent-core:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.core
-    container_name: ai-agent-core
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis_password
-    networks:
-      - ai-agent-network
-    depends_on:
-      - ai-agent-discovery
-      - postgresql
-      - redis
+  # ai-agent-core:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/docker/Dockerfile.core
+  #   container_name: ai-agent-core
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
+  #     SPRING_DATASOURCE_USERNAME: postgres
+  #     SPRING_DATASOURCE_PASSWORD: password
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: redis_password
+  #   networks:
+  #     - ai-agent-network
+  #   depends_on:
+  #     - ai-agent-discovery
+  #     - postgresql
+  #     - redis
 
   # Product Service
   product-service:
@@ -275,9 +275,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis_password
@@ -289,25 +289,25 @@ services:
       - redis
 
   # AI Agent Integration
-  ai-agent-integration:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.ai-agent
-    container_name: ai-agent-integration
-    ports:
-      - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis_password
-    networks:
-      - ai-agent-network
-    depends_on:
-      - ai-agent-discovery
-      - redis
+  # ai-agent-integration:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/docker/Dockerfile.ai-agent
+  #   container_name: ai-agent-integration
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+  #     AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: redis_password
+  #   networks:
+  #     - ai-agent-network
+  #   depends_on:
+  #     - ai-agent-discovery
+  #     - redis
 
   # User Service
   user-service:
@@ -322,9 +322,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis_password
@@ -348,9 +348,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis_password
@@ -374,9 +374,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ai_agent
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis_password
@@ -411,25 +411,25 @@ services:
       - redis
 
   # Search Service
-  search-service:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.search
-    container_name: search-service
-    ports:
-      - "8088:8088"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
-      AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis_password
-    networks:
-      - ai-agent-network
-    depends_on:
-      - ai-agent-discovery
-      - redis
+  # search-service:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/docker/Dockerfile.search
+  #   container_name: search-service
+  #   ports:
+  #     - "8088:8088"
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://ai-agent-discovery:8761/eureka/
+  #     AI_AGENT_PYTHON_SERVICE_URL: http://python-ai-agent:8000
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: redis_password
+  #   networks:
+  #     - ai-agent-network
+  #   depends_on:
+  #     - ai-agent-discovery
+  #     - redis
 
   # Python AI Agent (Optional - if you have the Python service)
   python-ai-agent:
