@@ -1,7 +1,6 @@
 package vn.tt.practice.userservice.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -12,18 +11,19 @@ import vn.tt.practice.userservice.config.JwtConfig;
 import vn.tt.practice.userservice.dto.LoginResponse;
 import vn.tt.practice.userservice.dto.UserLoginRequest;
 import vn.tt.practice.userservice.dto.UserRegisterRequest;
-import vn.tt.practice.userservice.entity.Role;
-import vn.tt.practice.userservice.entity.User;
+import vn.tt.practice.userservice.model.Role;
+import vn.tt.practice.userservice.model.User;
 import vn.tt.practice.userservice.repository.UserRepository;
 import vn.tt.practice.userservice.security.CustomUserDetails;
 import vn.tt.practice.userservice.security.JwtTokenProvider;
 
+import java.sql.Timestamp;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService {
+public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -34,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
 
     private static final String BLACKLIST_PREFIX = "bl_";
 
-    @Override
     @Transactional
     public void register(UserRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -51,27 +50,30 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
     }
 
-    @Override
     public LoginResponse login(UserLoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
 
-        String accessToken = jwtTokenProvider.generateToken(authentication);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
-        
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String accessToken = jwtTokenProvider.generateToken(authentication);
+            String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
 
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtConfig.getExpiration())
-                .userId(userDetails.getUser().getId())
-                .build();
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+            return LoginResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(jwtConfig.getExpiration())
+                    .userId(userDetails.getUser().getId())
+                    .build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
-    @Override
     public LoginResponse refreshToken(String refreshToken) {
         // Simple implementation: extract user from token and issue new access token
         // In real world, verify refresh token signature and expiration
@@ -97,8 +99,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    @Override
-    public void logout(String accessToken, UUID userId) {
+    public void logout(String accessToken, Long userId) {
         // Invalidate access token (add to blacklist)
         // Access token usually comes with "Bearer " prefix, strip it if needed
         if (accessToken != null && accessToken.startsWith("Bearer ")) {

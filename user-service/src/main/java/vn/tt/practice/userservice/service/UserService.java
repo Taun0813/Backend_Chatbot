@@ -1,7 +1,6 @@
 package vn.tt.practice.userservice.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -10,22 +9,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.userservice.dto.UserProfileUpdateRequest;
 import vn.tt.practice.userservice.dto.UserResponse;
-import vn.tt.practice.userservice.entity.Role;
-import vn.tt.practice.userservice.entity.User;
-import vn.tt.practice.userservice.entity.UserProfile;
+import vn.tt.practice.userservice.model.Role;
+import vn.tt.practice.userservice.model.User;
+import vn.tt.practice.userservice.model.UserProfile;
 import vn.tt.practice.userservice.repository.UserProfileRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
 
-    @Override
+
     @Transactional(readOnly = true)
     @Cacheable(value = "users", key = "#userId")
     public UserResponse getCurrentUser(Long userId) {
@@ -33,7 +30,7 @@ public class UserServiceImpl implements UserService {
         return mapToResponse(user);
     }
 
-    @Override
+
     @Transactional
     @CachePut(value = "users", key = "#userId")
     public UserResponse updateUserProfile(Long userId, UserProfileUpdateRequest request) {
@@ -53,7 +50,7 @@ public class UserServiceImpl implements UserService {
         return mapToResponse(user);
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     @Cacheable(value = "users", key = "#id")
     public UserResponse getUserById(Long id) {
@@ -63,14 +60,14 @@ public class UserServiceImpl implements UserService {
         return mapToResponse(user);
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable)
                 .map(this::mapToResponse);
     }
 
-    @Override
+
     @Transactional
     @CachePut(value = "users", key = "#userId")
     public UserResponse updateUserRole(Long userId, String roleName) {
@@ -105,7 +102,7 @@ public class UserServiceImpl implements UserService {
                 .fullName(fullName)
                 .phone(phone)
                 .role(user.getRole().name())
-                .createdAt(user.getCreatedAt())
+//                .createdAt(user.getCreatedAt())
                 .actived(user.getIsActive())
                 .build();
     }

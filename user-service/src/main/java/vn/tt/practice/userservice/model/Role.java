@@ -1,4 +1,4 @@
-package vn.tt.practice.userservice.entity;
+package vn.tt.practice.userservice.model;
 
 public enum Role {
     ROLE_USER("User"),

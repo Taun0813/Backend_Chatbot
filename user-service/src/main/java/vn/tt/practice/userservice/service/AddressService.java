@@ -5,23 +5,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.userservice.dto.AddressRequest;
 import vn.tt.practice.userservice.dto.AddressResponse;
-import vn.tt.practice.userservice.entity.Address;
-import vn.tt.practice.userservice.entity.User;
+import vn.tt.practice.userservice.model.Address;
+import vn.tt.practice.userservice.model.User;
 import vn.tt.practice.userservice.repository.AddressRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AddressServiceImpl implements AddressService {
+public class AddressService {
 
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
 
-    @Override
     @Transactional(readOnly = true)
     public List<AddressResponse> getUserAddresses(Long userId) {
         return addressRepository.findByUserId(userId).stream()
@@ -29,7 +27,6 @@ public class AddressServiceImpl implements AddressService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Transactional
     public AddressResponse addAddress(Long userId, AddressRequest request) {
         User user = userRepository.findById(userId)
@@ -54,7 +51,6 @@ public class AddressServiceImpl implements AddressService {
         return mapToResponse(addressRepository.save(address));
     }
 
-    @Override
     @Transactional
     public AddressResponse updateAddress(Long userId, Long addressId, AddressRequest request) {
         Address address = addressRepository.findById(addressId)
@@ -75,7 +71,6 @@ public class AddressServiceImpl implements AddressService {
         return mapToResponse(addressRepository.save(address));
     }
 
-    @Override
     @Transactional
     public void deleteAddress(Long userId, Long addressId) {
         Address address = addressRepository.findById(addressId)
