@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import vn.tt.practice.userservice.config.JwtConfig;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,8 @@ public class JwtTokenProvider {
     private final JwtConfig jwtConfig;
 
     private SecretKey getSignKey() {
-        return Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Decoders.BASE64.decode(jwtConfig.getSecret());
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(Authentication authentication) {

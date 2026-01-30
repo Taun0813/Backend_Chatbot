@@ -11,6 +11,7 @@ import vn.tt.practice.userservice.service.AuthService;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/users/auth")
@@ -54,7 +55,7 @@ public class AuthController {
     @Operation(summary = "Logout user")
     public ResponseEntity<ApiResponse<Void>> logout(
             @RequestHeader(value = "Authorization", required = false) String accessToken,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
         
         if (accessToken != null && userId != null) {
             authService.logout(accessToken, userId);

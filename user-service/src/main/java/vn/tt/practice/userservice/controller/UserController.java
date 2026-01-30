@@ -14,6 +14,7 @@ import vn.tt.practice.userservice.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/users")
@@ -59,7 +60,6 @@ public class UserController {
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@RequestHeader("X-User-Id") Long userId) {
-
         return ok(userService.getCurrentUser(userId));
     }
 
