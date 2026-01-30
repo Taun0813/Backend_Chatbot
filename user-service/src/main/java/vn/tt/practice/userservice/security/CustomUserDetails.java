@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import vn.tt.practice.userservice.entity.User;
+import vn.tt.practice.userservice.model.User;
 
 import java.util.Collection;
 import java.util.Collections;
