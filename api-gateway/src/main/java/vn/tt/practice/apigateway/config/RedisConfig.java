@@ -1,5 +1,6 @@
 package vn.tt.practice.apigateway.config;
 
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -19,5 +20,11 @@ public class RedisConfig {
                 .<String, String>newSerializationContext(serializer)
                 .build();
         return new ReactiveRedisTemplate<>(factory, context);
+    }
+
+    // default rate limiter: replenishRate=10, burstCapacity=20
+    @Bean
+    public RedisRateLimiter defaultRateLimiter() {
+        return new RedisRateLimiter(10, 20);
     }
 }
