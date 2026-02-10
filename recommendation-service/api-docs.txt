@@ -1,0 +1,279 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Recommendation Service API",
+    "description": "Product recommendations: personalized, popular, trending, and related products. Tracks user behavior and generates recommendations based on views and purchases.",
+    "contact": {
+      "name": "E-Commerce Team",
+      "email": "dev@ecommerce.local"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8089",
+      "description": "Local (direct)"
+    },
+    {
+      "url": "http://localhost:8181",
+      "description": "Via API Gateway"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Recommendation Management",
+      "description": "APIs for product recommendations"
+    }
+  ],
+  "paths": {
+    "/recommendations/refresh/{type}": {
+      "post": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Refresh recommendations (ADMIN)",
+        "operationId": "refreshRecommendations",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POPULAR",
+                "PERSONALIZED",
+                "RELATED",
+                "TRENDING"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/recommendations/{type}": {
+      "get": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Get recommendations by type",
+        "operationId": "getRecommendations",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "POPULAR",
+                "PERSONALIZED",
+                "RELATED",
+                "TRENDING"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/user/preferences": {
+      "get": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Get user preferences",
+        "operationId": "getUserPreferences",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserPreferenceDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/product/{productId}/related": {
+      "get": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Get related products",
+        "operationId": "getRelatedProducts",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RecommendationDTO": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productDescription": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "recommendationType": {
+            "type": "string",
+            "enum": [
+              "POPULAR",
+              "PERSONALIZED",
+              "RELATED",
+              "TRENDING"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "rankPosition": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UserPreferenceDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "viewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purchaseCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastViewedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastPurchasedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "preferenceScore": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
