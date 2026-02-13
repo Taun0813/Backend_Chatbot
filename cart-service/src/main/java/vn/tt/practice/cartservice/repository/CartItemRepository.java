@@ -4,12 +4,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import vn.tt.practice.cartservice.model.CartItem;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
+public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
-    Optional<CartItem> findByCart_UserIdAndProductId(UUID userId, UUID productId);
+    Optional<CartItem> findByCartIdAndProductId(Long cartId, Long productId);
 
-    void deleteByCart_UserIdAndProductId(UUID userId, UUID productId);
+    void deleteByCartIdAndProductId(Long cartId, Long productId);
 }
 

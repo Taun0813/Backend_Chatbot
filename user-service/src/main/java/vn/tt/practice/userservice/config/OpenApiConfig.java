@@ -1,4 +1,4 @@
-package vn.tt.practice.recommendationservice.config;
+package vn.tt.practice.userservice.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -15,16 +15,16 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI recommendationServiceOpenAPI() {
+    public OpenAPI userServiceOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Recommendation Service API")
+                        .title("User Service API")
                         .version("1.0.0")
-                        .description("Product recommendations: personalized, popular, trending, and related products. " +
-                                "Tracks user behavior and generates recommendations based on views and purchases.")
+                        .description("User management: authentication, registration, profile management, role-based access control. " +
+                                "JWT-based authentication with refresh token support.")
                         .contact(new Contact().name("E-Commerce Team").email("dev@ecommerce.local")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8087").description("Local (direct)"),
+                        new Server().url("http://localhost:8081").description("Local (direct)"),
                         new Server().url("http://localhost:8181").description("Via API Gateway")
                 ))
                 .components(new Components()

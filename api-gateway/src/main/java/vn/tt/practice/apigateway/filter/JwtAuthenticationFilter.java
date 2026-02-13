@@ -27,6 +27,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        String method = exchange.getRequest().getMethod().name();
+        
+        // Allow OPTIONS requests (CORS preflight)
+        if ("OPTIONS".equals(method)) {
+            return chain.filter(exchange);
+        }
+        
+        // Allow auth endpoints without token
         if (path.startsWith("/api/auth/")) {
             return chain.filter(exchange);
         }
@@ -69,7 +77,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
         exchange.getResponse().setStatusCode(httpStatus);
-        return exchange.getResponse().setComplete();
+        exchange.getResponse().getHeaders().add(HttpHeaders.CONTENT_TYPE, "application/json");
+        String body = String.format("{\"success\":false,\"message\":\"%s\",\"timestamp\":\"%s\"}", 
+                err, java.time.LocalDateTime.now());
+        org.springframework.core.io.buffer.DataBuffer buffer = exchange.getResponse()
+                .bufferFactory()
+                .wrap(body.getBytes());
+        return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 
     @Override

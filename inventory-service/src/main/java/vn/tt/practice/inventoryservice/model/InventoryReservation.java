@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "inventory_reservations")
@@ -15,21 +14,50 @@ import java.util.UUID;
 public class InventoryReservation {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private UUID productId;
-    private UUID orderId;
-    private int quantity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inventory_id", nullable = false)
+    private Inventory inventory;
+
+    @Column(name = "order_id", nullable = false)
+    private Long orderId;
+
+    @Column(nullable = false)
+    private Integer quantity;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    @Column(nullable = false, length = 50)
+    @Builder.Default
+    private ReservationStatus status = ReservationStatus.PENDING;
 
-    private Instant expiredAt;
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public enum Status {
-        RESERVED,
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+        updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
+    }
+
+    public enum ReservationStatus {
+        PENDING,
         CONFIRMED,
-        RELEASED
+        RELEASED,
+        EXPIRED
     }
 }

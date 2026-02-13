@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/users/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
-@Tag(name = "User Controller", description = "APIs for user authentication and management")
+@Tag(name = "Auth Controller", description = "APIs for user authentication")
 public class AuthController {
 
     private final AuthService authService;

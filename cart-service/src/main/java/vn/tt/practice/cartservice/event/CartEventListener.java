@@ -24,10 +24,10 @@ public class CartEventListener {
         cartService.clearCart(event.getUserId());
     }
 
-    @RabbitListener(queues = RabbitMQConfig.PRODUCT_DELETED_QUEUE)
-    public void handleProductDeleted(ProductDeletedEvent event) {
-        cartService.removeProductFromCarts(event.getProductId());
-    }
+//    @RabbitListener(queues = RabbitMQConfig.PRODUCT_DELETED_QUEUE)
+//    public void handleProductDeleted(ProductDeletedEvent event) {
+//        cartService.removeProductFromCarts(event.getProductId());
+//    }
 
 
     @Data

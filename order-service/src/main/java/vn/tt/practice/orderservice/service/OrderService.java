@@ -1,18 +1,20 @@
 package vn.tt.practice.orderservice.service;
 
-import vn.tt.practice.orderservice.client.InventoryClient;
-import vn.tt.practice.orderservice.dto.Request;
-import vn.tt.practice.orderservice.dto.Response;
-import vn.tt.practice.orderservice.model.Order;
-import vn.tt.practice.orderservice.model.OrderItem;
-import vn.tt.practice.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.tt.practice.orderservice.client.InventoryClient;
+import vn.tt.practice.orderservice.dto.CreateOrderRequest;
+import vn.tt.practice.orderservice.dto.OrderDTO;
+import vn.tt.practice.orderservice.dto.OrderItemDTO;
+import vn.tt.practice.orderservice.enums.OrderStatus;
+import vn.tt.practice.orderservice.model.Order;
+import vn.tt.practice.orderservice.model.OrderItem;
+import vn.tt.practice.orderservice.repository.OrderRepository;
 
-import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,53 +24,91 @@ public class OrderService {
     private final InventoryClient inventoryClient;
 
     @Transactional
-    public Response createOrder(
-            UUID userId,
-            Request request
-    ) {
-
-        UUID orderId = UUID.randomUUID();
-
+    public OrderDTO createOrder(Long userId, CreateOrderRequest request) {
+        // Build order items
         List<OrderItem> items = request.getItems().stream()
-                .map(i -> OrderItem.builder()
-                        .id(UUID.randomUUID())
-                        .productId(i.getProductId())
-                        .quantity(i.getQuantity())
-                        .price(100_000) // giả lập, sau này gọi Product Service
+                .map(item -> OrderItem.builder()
+                        .productId(item.getProductId())
+                        .productName("Product " + item.getProductId()) // TODO: Fetch from Product Service
+                        .quantity(item.getQuantity())
+                        .unitPrice(BigDecimal.valueOf(100000)) // TODO: Fetch from Product Service
                         .build())
-                .toList();
+                .collect(Collectors.toList());
 
-        long total = items.stream()
-                .mapToLong(i -> i.getPrice() * i.getQuantity())
-                .sum();
+        // Calculate total
+        BigDecimal totalAmount = items.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Create order
         Order order = Order.builder()
-                .id(orderId)
                 .userId(userId)
-                .status(Order.Status.PENDING)
-                .totalAmount(total)
-                .createdAt(Instant.now())
+                .totalAmount(totalAmount)
+                .status(OrderStatus.PENDING)
+                .shippingAddress(request.getShippingAddress())
+                .shippingCity(request.getShippingCity())
+                .shippingPostalCode(request.getShippingPostalCode())
+                .paymentMethod(request.getPaymentMethod())
+                .notes(request.getNotes())
                 .items(items)
                 .build();
 
-        items.forEach(i -> i.setOrder(order));
+        items.forEach(item -> item.setOrder(order));
 
-        orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
 
-        // reserve inventory
-        request.getItems().forEach(i ->
+        // Reserve inventory
+        request.getItems().forEach(item ->
                 inventoryClient.reserve(
                         new InventoryClient.ReserveRequest(
-                                i.getProductId(),
-                                orderId,
-                                i.getQuantity()
+                                item.getProductId(),
+                                savedOrder.getId(),
+                                item.getQuantity()
                         )
                 )
         );
 
-        return Response.builder()
-                .orderId(orderId)
-                .status(order.getStatus().name())
+        return mapToDTO(savedOrder);
+    }
+
+    public OrderDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        return mapToDTO(order);
+    }
+
+    public List<OrderDTO> getUserOrders(Long userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private OrderDTO mapToDTO(Order order) {
+        List<OrderItemDTO> itemDTOs = order.getItems().stream()
+                .map(item -> OrderItemDTO.builder()
+                        .id(item.getId())
+                        .productId(item.getProductId())
+                        .productName(item.getProductName())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .subtotal(item.getSubtotal())
+                        .build())
+                .collect(Collectors.toList());
+
+        return OrderDTO.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .userId(order.getUserId())
+                .totalAmount(order.getTotalAmount())
+                .status(OrderStatus.valueOf(order.getStatus().name()))
+                .shippingAddress(order.getShippingAddress())
+                .shippingCity(order.getShippingCity())
+                .shippingPostalCode(order.getShippingPostalCode())
+                .paymentMethod(order.getPaymentMethod())
+                .notes(order.getNotes())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .items(itemDTOs)
                 .build();
     }
 }

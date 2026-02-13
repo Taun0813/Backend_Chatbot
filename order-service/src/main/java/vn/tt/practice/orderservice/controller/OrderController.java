@@ -1,38 +1,51 @@
 package vn.tt.practice.orderservice.controller;
 
-import vn.tt.practice.orderservice.dto.Request;
-import vn.tt.practice.orderservice.dto.Response;
-import vn.tt.practice.orderservice.model.Order;
-import vn.tt.practice.orderservice.repository.OrderRepository;
-import vn.tt.practice.orderservice.service.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.tt.practice.orderservice.dto.CreateOrderRequest;
+import vn.tt.practice.orderservice.dto.OrderDTO;
+import vn.tt.practice.orderservice.service.OrderService;
 
-import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
+@Tag(name = "Order Controller", description = "APIs for order management")
 public class OrderController {
 
     private final OrderService orderService;
-    private final OrderRepository orderRepository;
 
-    //Mock User when testing
-    private UUID getUserId() {
-        return UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private Long getUserId(HttpServletRequest request) {
+        String userIdHeader = request.getHeader("X-User-Id");
+        return userIdHeader != null ? Long.parseLong(userIdHeader) : null;
     }
 
     @PostMapping
-    public Response create(
-            @RequestBody Request request
+    @Operation(summary = "Create new order")
+    public ResponseEntity<OrderDTO> createOrder(
+            @RequestBody @Valid CreateOrderRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return orderService.createOrder(getUserId(), request);
+        Long userId = getUserId(httpRequest);
+        return ResponseEntity.ok(orderService.createOrder(userId, request));
     }
 
     @GetMapping("/{id}")
-    public Order get(@PathVariable UUID id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+    @Operation(summary = "Get order by ID")
+    public ResponseEntity<OrderDTO> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrderById(id));
+    }
+
+    @GetMapping("/user/me")
+    @Operation(summary = "Get current user's orders")
+    public ResponseEntity<List<OrderDTO>> getUserOrders(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        return ResponseEntity.ok(orderService.getUserOrders(userId));
     }
 }

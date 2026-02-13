@@ -1,4 +1,4 @@
-package vn.tt.practice.recommendationservice.config;
+package vn.tt.practice.inventoryservice.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -15,16 +15,16 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI recommendationServiceOpenAPI() {
+    public OpenAPI inventoryServiceOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Recommendation Service API")
+                        .title("Inventory Service API")
                         .version("1.0.0")
-                        .description("Product recommendations: personalized, popular, trending, and related products. " +
-                                "Tracks user behavior and generates recommendations based on views and purchases.")
+                        .description("Inventory management: stock management, reservation handling, inventory transactions. " +
+                                "Handles stock reservations for orders and releases them on payment failure.")
                         .contact(new Contact().name("E-Commerce Team").email("dev@ecommerce.local")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8087").description("Local (direct)"),
+                        new Server().url("http://localhost:8083").description("Local (direct)"),
                         new Server().url("http://localhost:8181").description("Via API Gateway")
                 ))
                 .components(new Components()
