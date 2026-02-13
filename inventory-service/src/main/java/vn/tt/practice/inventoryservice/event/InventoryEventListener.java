@@ -28,47 +28,71 @@ public class InventoryEventListener {
     @RabbitListener(queues = RabbitMQConfig.ORDER_CREATED_QUEUE)
     @Transactional
     public void handleOrderCreated(OrderCreatedEvent event) {
-        log.info("Received OrderCreatedEvent: orderId={}, items={}", event.getOrderId(), event.getItems());
-        
+        Long orderId = event.getOrderId();
+        log.info("Received OrderCreatedEvent: orderId={}, items={}", orderId, event.getItems());
+
+//        // idempotent: nếu đã có reservation (PENDING/CONFIRMED) thì bỏ qua
+//        if (reservationRepository.existsByOrderIdAndStatusIn(
+//                orderId,
+//                java.util.List.of(
+//                        InventoryReservation.ReservationStatus.PENDING,
+//                        InventoryReservation.ReservationStatus.CONFIRMED
+//                ))) {
+//            log.info("Skip OrderCreatedEvent because reservations already exist. orderId={}", orderId);
+//            return;
+//        }
+
+        var items = event.getItems();
+
         try {
-            Long orderId = event.getOrderId();
-            
-            // Process each order item
-            for (OrderItemEvent item : event.getItems()) {
-                Long productId = item.getProductId();
-                Integer quantity = item.getQuantity();
-                
-                try {
-                    // Check and reserve stock
-                    inventoryService.reserve(
-                            vn.tt.practice.inventoryservice.dto.Request.builder()
-                                    .productId(productId)
-                                    .orderId(orderId)
-                                    .quantity(quantity)
-                                    .build()
-                    );
-                    
-                    // Publish success event
-                    eventPublisher.publishInventoryReserved(orderId, productId, quantity);
-                    log.info("Successfully reserved inventory: orderId={}, productId={}, quantity={}", 
-                            orderId, productId, quantity);
-                    
-                } catch (Exception e) {
-                    log.error("Failed to reserve inventory: orderId={}, productId={}, quantity={}", 
-                            orderId, productId, quantity, e);
-                    
-                    // Publish failure event
-                    eventPublisher.publishInventoryReservationFailed(
-                            orderId, 
-                            "Insufficient stock for product " + productId + ": " + e.getMessage()
+            // Reserve ALL items
+            for (OrderItemEvent item : items) {
+                var res = inventoryService.reserve(
+                        vn.tt.practice.inventoryservice.dto.Request.builder()
+                                .productId(item.getProductId())
+                                .orderId(orderId)
+                                .quantity(item.getQuantity())
+                                .build()
+                );
+
+                // QUAN TRỌNG: reserve() của bạn không throw khi thiếu hàng -> phải check ở đây
+                if (res == null || !Boolean.TRUE.equals(res.getReserved())) {
+                    throw new IllegalStateException(
+                            "Reservation failed for productId=" + item.getProductId()
+                                    + ", qty=" + item.getQuantity()
+                                    + ". " + (res != null ? res.getMessage() : "")
                     );
                 }
             }
+
+            // ALL ok -> publish success (per item hoặc 1 event tổng)
+            for (OrderItemEvent item : items) {
+                eventPublisher.publishInventoryReserved(orderId, item.getProductId(), item.getQuantity());
+            }
+
+            log.info("Reserved inventory for entire order successfully. orderId={}", orderId);
+
         } catch (Exception e) {
-            log.error("Error processing OrderCreatedEvent", e);
-            throw e; // Let RabbitMQ retry
+            log.error("Reserve failed. Compensating by releasing reservations. orderId={}", orderId, e);
+
+            // release any reserved reservations of this order (PENDING)
+            try {
+                releaseReservations(orderId);
+            } catch (Exception ex) {
+                log.error("Compensation release failed. orderId={}", orderId, ex);
+            }
+
+            eventPublisher.publishInventoryReservationFailed(
+                    orderId,
+                    "Failed to reserve inventory for orderId=" + orderId + ". reason=" + e.getMessage()
+            );
+
+            // Nếu bạn muốn Rabbit retry thì giữ throw (nhưng nhớ idempotent + tránh spam event fail).
+            throw e;
         }
     }
+
+
 
     @RabbitListener(queues = RabbitMQConfig.PAYMENT_COMPLETED_QUEUE)
     @Transactional
@@ -113,58 +137,58 @@ public class InventoryEventListener {
         }
     }
 
-    private void confirmReservations(Long orderId) {
-        var reservations = reservationRepository.findByOrderId(orderId);
-        
+    @Transactional
+    public void confirmReservations(Long orderId) {
+        var reservations = reservationRepository.findAllByOrderId(orderId);
+
         for (InventoryReservation reservation : reservations) {
-            if (reservation.getStatus() == InventoryReservation.Status.RESERVED) {
-                // Confirm reservation - stock already reduced from available when reserved
-                Inventory inventory = inventoryRepository.findByProductId(reservation.getProductId())
-                        .orElseThrow(() -> new RuntimeException("Inventory not found for product: " + reservation.getProductId()));
-                
-                // Move from reserved to confirmed (stock already reduced from available)
-                inventory.setReservedStock(inventory.getReservedStock() - reservation.getQuantity());
-                inventory.setUpdatedAt(Instant.now());
-                inventoryRepository.save(inventory);
-                
-                reservation.setStatus(InventoryReservation.Status.CONFIRMED);
-                reservationRepository.save(reservation);
-                
-                // Publish stock updated event
-                eventPublisher.publishStockUpdated(reservation.getProductId(), inventory.getAvailableStock());
-                
-                log.info("Confirmed reservation: reservationId={}, productId={}, quantity={}", 
-                        reservation.getId(), reservation.getProductId(), reservation.getQuantity());
+            if (reservation.getStatus() != InventoryReservation.ReservationStatus.PENDING) continue;
+
+            Inventory inventory = reservation.getInventory();
+            Long productId = inventory.getProductId();
+            int qty = reservation.getQuantity();
+
+            if (inventory.getReservedQuantity() < qty) {
+                throw new IllegalStateException("Reserved inconsistent productId=" + productId);
             }
+
+            inventory.setReservedQuantity(inventory.getReservedQuantity() - qty);
+            inventory.setUpdatedAt(Instant.now());
+            inventoryRepository.save(inventory);
+
+            reservation.setStatus(InventoryReservation.ReservationStatus.CONFIRMED);
+            reservationRepository.save(reservation);
+
+            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         }
     }
 
-    private void releaseReservations(Long orderId) {
-        var reservations = reservationRepository.findByOrderId(orderId);
-        
+    @Transactional
+    public void releaseReservations(Long orderId) {
+        var reservations = reservationRepository.findAllByOrderId(orderId);
+
         for (InventoryReservation reservation : reservations) {
-            if (reservation.getStatus() == InventoryReservation.Status.RESERVED) {
-                // Release reserved stock back to available
-                Inventory inventory = inventoryRepository.findByProductId(reservation.getProductId())
-                        .orElseThrow(() -> new RuntimeException("Inventory not found for product: " + reservation.getProductId()));
-                
-                inventory.setAvailableStock(inventory.getAvailableStock() + reservation.getQuantity());
-                inventory.setReservedStock(inventory.getReservedStock() - reservation.getQuantity());
-                inventory.setUpdatedAt(Instant.now());
-                inventoryRepository.save(inventory);
-                
-                reservation.setStatus(InventoryReservation.Status.RELEASED);
-                reservationRepository.save(reservation);
-                
-                // Publish stock updated event
-                eventPublisher.publishStockUpdated(reservation.getProductId(), inventory.getAvailableStock());
-                
-                log.info("Released reservation: reservationId={}, productId={}, quantity={}", 
-                        reservation.getId(), reservation.getProductId(), reservation.getQuantity());
+            if (reservation.getStatus() != InventoryReservation.ReservationStatus.PENDING) continue;
+
+            Inventory inventory = reservation.getInventory();
+            Long productId = inventory.getProductId();
+            int qty = reservation.getQuantity();
+
+            if (inventory.getReservedQuantity() < qty) {
+                throw new IllegalStateException("Reserved inconsistent productId=" + productId);
             }
+
+            inventory.setAvailableQuantity(inventory.getAvailableQuantity() + qty);
+            inventory.setReservedQuantity(inventory.getReservedQuantity() - qty);
+            inventory.setUpdatedAt(Instant.now());
+            inventoryRepository.save(inventory);
+
+            reservation.setStatus(InventoryReservation.ReservationStatus.RELEASED);
+            reservationRepository.save(reservation);
+
+            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         }
     }
-
 
     // Event DTOs
     @lombok.Data

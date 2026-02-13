@@ -17,6 +17,17 @@ spring:
       hibernate:
         format_sql: true
 
+  flyway:
+    validate-on-migrate: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: rabbitmq_password
+
+
+
 server:
   port: 8088
 
@@ -26,3 +37,5 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+

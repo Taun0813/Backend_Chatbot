@@ -6,10 +6,14 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "inventory_reservations")
+@Table(name = "inventory_reservations",
+        indexes = {
+                @Index(name = "idx_reservation_order", columnList = "order_id"),
+                @Index(name = "idx_reservation_status", columnList = "status"),
+                @Index(name = "idx_reservation_expires", columnList = "expires_at")
+        })
 @Getter @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor @AllArgsConstructor
 @Builder
 public class InventoryReservation {
 
@@ -17,7 +21,7 @@ public class InventoryReservation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "inventory_id", nullable = false)
     private Inventory inventory;
 
@@ -43,10 +47,13 @@ public class InventoryReservation {
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
+        final Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (expiresAt == null) {
+            // TTL mặc định: 15 phút (tuỳ bạn)
+            expiresAt = now.plusSeconds(15 * 60);
         }
-        updatedAt = Instant.now();
+        updatedAt = now;
     }
 
     @PreUpdate
@@ -61,3 +68,4 @@ public class InventoryReservation {
         EXPIRED
     }
 }
+

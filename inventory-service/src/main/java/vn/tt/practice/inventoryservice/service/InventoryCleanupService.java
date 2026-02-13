@@ -23,51 +23,68 @@ public class InventoryCleanupService {
 
     /**
      * Cleanup expired reservations every 5 minutes
-     * Releases reserved stock back to available stock
+     * Releases reserved quantity back to available quantity
      */
-    @Scheduled(fixedRate = 300000) // 5 minutes in milliseconds
+    @Scheduled(fixedRate = 300_000) // 5 minutes
     @Transactional
     public void cleanupExpiredReservations() {
         log.info("Starting cleanup of expired reservations");
-        
+
         Instant now = Instant.now();
-        List<InventoryReservation> expiredReservations = reservationRepository
-                .findByStatusAndExpiredAtBefore(InventoryReservation.Status.RESERVED, now);
-        
+
+        List<InventoryReservation> expiredReservations =
+                reservationRepository.findAllByStatusAndExpiresAtBefore(
+                        InventoryReservation.ReservationStatus.PENDING,
+                        now
+                );
+
         if (expiredReservations.isEmpty()) {
             log.debug("No expired reservations found");
             return;
         }
-        
+
         log.info("Found {} expired reservations to cleanup", expiredReservations.size());
-        
+
         for (InventoryReservation reservation : expiredReservations) {
             try {
-                // Release reserved stock back to available
-                Inventory inventory = inventoryRepository
-                        .findByProductId(reservation.getProductId())
-                        .orElse(null);
-                
-                if (inventory != null) {
-                    inventory.setAvailableStock(inventory.getAvailableStock() + reservation.getQuantity());
-                    inventory.setReservedStock(inventory.getReservedStock() - reservation.getQuantity());
-                    inventory.setUpdatedAt(Instant.now());
-                    inventoryRepository.save(inventory);
-                    
-                    log.info("Released expired reservation: reservationId={}, productId={}, quantity={}", 
-                            reservation.getId(), reservation.getProductId(), reservation.getQuantity());
+                Inventory inventory = reservation.getInventory();
+                Long productId = inventory.getProductId();
+                int qty = reservation.getQuantity();
+
+                // (khuyến nghị) lock lại inventory để tránh race khi có event confirm/release song song
+                inventory = inventoryRepository.lockByProductId(productId)
+                        .orElseThrow(() -> new IllegalStateException("Inventory not found productId=" + productId));
+
+                // guard chống âm reserved
+                if (inventory.getReservedQuantity() < qty) {
+                    log.warn("Skip cleanup due to inconsistent reservedQuantity: reservationId={}, productId={}, reserved={}, qty={}",
+                            reservation.getId(), productId, inventory.getReservedQuantity(), qty);
+                    // đánh dấu EXPIRED để không loop mãi (tuỳ chiến lược)
+                    reservation.setStatus(InventoryReservation.ReservationStatus.EXPIRED);
+                    reservationRepository.save(reservation);
+                    continue;
                 }
-                
-                // Mark reservation as released
-                reservation.setStatus(InventoryReservation.Status.RELEASED);
+
+                // Release reserved -> available
+                inventory.setAvailableQuantity(inventory.getAvailableQuantity() + qty);
+                inventory.setReservedQuantity(inventory.getReservedQuantity() - qty);
+                inventory.setUpdatedAt(Instant.now());
+                inventoryRepository.save(inventory);
+
+                // Mark reservation expired (đúng nghĩa hơn RELEASED)
+                reservation.setStatus(InventoryReservation.ReservationStatus.EXPIRED);
                 reservationRepository.save(reservation);
-                
+
+                log.info("Expired reservation released: reservationId={}, productId={}, quantity={}",
+                        reservation.getId(), productId, qty);
+
             } catch (Exception e) {
-                log.error("Error cleaning up expired reservation: reservationId={}", 
+                log.error("Error cleaning up expired reservation: reservationId={}",
                         reservation.getId(), e);
             }
         }
-        
+
         log.info("Completed cleanup of expired reservations");
     }
 }
+
