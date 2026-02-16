@@ -16,10 +16,6 @@ import lombok.Setter;
 @Builder
 public class User extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(unique = true, nullable = false)
     private String email;
 
@@ -32,12 +28,6 @@ public class User extends BaseEntity {
 
     @Column(name = "is_active")
     private Boolean isActive;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserProfile userProfile;

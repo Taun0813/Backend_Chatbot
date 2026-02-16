@@ -1,3 +1,60 @@
+## Product Service
+
+### Chức năng
+
+- Quản lý sản phẩm và danh mục:
+  - Tạo/sửa/xoá sản phẩm.
+  - Quản lý category.
+- Tìm kiếm, phân trang, lọc sản phẩm.
+- Được dùng bởi giỏ hàng, recommendation, v.v.
+
+### Cổng
+
+- Mặc định: `8082`
+
+### Endpoint chính (tham khảo)
+
+- Sản phẩm:
+  - `GET /products` – danh sách (paginated).
+  - `GET /products/{id}` – chi tiết sản phẩm.
+  - `GET /products/search` – tìm kiếm nâng cao.
+  - `GET /products/category/{categoryId}` – sản phẩm theo category.
+  - `POST /products` – tạo mới (ADMIN).
+  - `PUT /products/{id}` – cập nhật (ADMIN).
+  - `DELETE /products/{id}` – xoá (ADMIN).
+- Category:
+  - `GET /categories`
+  - `POST /categories` (ADMIN)
+  - `PUT /categories/{id}` (ADMIN)
+  - `DELETE /categories/{id}` (ADMIN)
+
+### Bảo mật
+
+- SecurityConfig:
+  - Cho phép `/products/**`, `/categories/**`, swagger, actuator.
+  - Không decode JWT.
+- Controller:
+  - Các thao tác ghi (POST/PUT/DELETE) yêu cầu ADMIN/SUPER_ADMIN qua header `X-User-Roles`.
+
+### Persistence
+
+- Entities:
+  - `Product`, `Category` (kế thừa `BaseEntity`).
+- Flyway migrations:
+  - `db/migration/V1__init_schema.sql` định nghĩa bảng, khoá ngoại, index.
+
+### Tích hợp
+
+- Được gọi bởi:
+  - `cart-service` qua Feign để lấy `productName`, `price`.
+  - `recommendation-service` để build `RecommendationDTO`.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Product Service (Port 8082)
 
 **Chức năng**: Quản lý **product catalog** cho hệ thống e-commerce:

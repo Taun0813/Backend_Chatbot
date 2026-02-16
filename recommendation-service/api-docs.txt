@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8089",
+      "url": "http://localhost:8087",
       "description": "Local (direct)"
     },
     {
@@ -26,6 +26,30 @@
     }
   ],
   "paths": {
+    "/recommendations/track": {
+      "post": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Track user interaction",
+        "operationId": "trackInteraction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InteractionDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/recommendations/refresh/{type}": {
       "post": {
         "tags": [
@@ -56,56 +80,6 @@
         }
       }
     },
-    "/recommendations/{type}": {
-      "get": {
-        "tags": [
-          "Recommendation Management"
-        ],
-        "summary": "Get recommendations by type",
-        "operationId": "getRecommendations",
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "POPULAR",
-                "PERSONALIZED",
-                "RELATED",
-                "TRENDING"
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RecommendationDTO"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/recommendations/user/preferences": {
       "get": {
         "tags": [
@@ -130,13 +104,13 @@
         }
       }
     },
-    "/recommendations/product/{productId}/related": {
+    "/recommendations/similar/{productId}": {
       "get": {
         "tags": [
           "Recommendation Management"
         ],
-        "summary": "Get related products",
-        "operationId": "getRelatedProducts",
+        "summary": "Get similar products",
+        "operationId": "getSimilarProducts",
         "parameters": [
           {
             "name": "productId",
@@ -174,48 +148,105 @@
           }
         }
       }
+    },
+    "/recommendations/popular": {
+      "get": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Get popular products",
+        "operationId": "getPopularRecommendations",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/me": {
+      "get": {
+        "tags": [
+          "Recommendation Management"
+        ],
+        "summary": "Get personalized recommendations",
+        "operationId": "getPersonalizedRecommendations",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecommendationDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
-      "RecommendationDTO": {
+      "InteractionDTO": {
+        "required": [
+          "interactionType",
+          "productId"
+        ],
         "type": "object",
         "properties": {
           "productId": {
             "type": "integer",
             "format": "int64"
           },
-          "productName": {
-            "type": "string"
-          },
-          "productDescription": {
-            "type": "string"
-          },
-          "price": {
-            "type": "number"
-          },
           "categoryId": {
             "type": "integer",
             "format": "int64"
           },
-          "categoryName": {
-            "type": "string"
-          },
-          "recommendationType": {
+          "interactionType": {
             "type": "string",
             "enum": [
-              "POPULAR",
-              "PERSONALIZED",
-              "RELATED",
-              "TRENDING"
+              "VIEW",
+              "ADD_TO_CART",
+              "PURCHASE",
+              "REMOVE_FROM_CART"
             ]
-          },
-          "score": {
-            "type": "number"
-          },
-          "rankPosition": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -264,6 +295,47 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "RecommendationDTO": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productDescription": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "recommendationType": {
+            "type": "string",
+            "enum": [
+              "POPULAR",
+              "PERSONALIZED",
+              "RELATED",
+              "TRENDING"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "rankPosition": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

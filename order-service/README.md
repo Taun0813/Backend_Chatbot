@@ -1,3 +1,60 @@
+## Order Service
+
+### Chức năng
+
+- Quản lý đơn hàng người dùng.
+- Điều phối Order Saga với:
+  - Inventory Service (reserve/confirm/release stock).
+  - Payment Service (xử lý thanh toán).
+  - Warranty Service (tự tạo bảo hành khi order paid).
+- Lưu lịch sử trạng thái đơn hàng.
+
+### Cổng
+
+- Mặc định: `8084`
+
+### Bảng chính
+
+- `orders`
+- `order_items`
+- `order_status_history`
+- Index trên `user_id`, `status`, `order_number`.
+
+### Endpoint chính
+
+- `POST /orders` – tạo order mới (status PENDING).
+- `GET /orders/{id}` – chi tiết order.
+- `GET /orders/user/me` – danh sách order của user hiện tại.
+- `GET /orders/user/{userId}` – order theo userId (ADMIN).
+- `PUT /orders/{id}/status` – cập nhật status (ADMIN).
+- `PUT /orders/{id}/cancel` – huỷ order (chỉ khi PENDING/RESERVED).
+- `GET /orders/{id}/status-history` – lịch sử trạng thái.
+- `GET /orders` – danh sách order (ADMIN, paginated).
+
+### Saga & sự kiện
+
+- Luồng cơ bản:
+  - `createOrder` → lưu order (PENDING) → publish `OrderCreatedEvent` → Inventory.
+  - Inventory reserve OK → `InventoryReservedEvent` → update status `RESERVED` + publish `OrderReservedEvent` → Payment.
+  - Payment completed → `PaymentCompletedEvent` → update status `PAID` + `CONFIRMED` + publish `OrderPaidEvent` → Warranty.
+  - Payment / Inventory fail → status `FAILED`, phát `OrderFailedEvent` (để release stock).
+
+- `OrderEventPublisher` phát các event:
+  - CREATED, RESERVED, PAID, CONFIRMED, CANCELLED, FAILED.
+- `OrderEventListener` và `OrderSagaOrchestrator` xử lý các event inbound và điều phối chuyển trạng thái.
+
+### Bảo mật
+
+- SecurityConfig đơn giản, không filter JWT.
+- Controller:
+  - Các endpoint quản trị (`GET /orders`, `GET /orders/user/{userId}`, `PUT /orders/{id}/status`) yêu cầu ADMIN/SUPER_ADMIN qua header `X-User-Roles`.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Order Service (Port 8084)
 
 **Chức năng**: Quản lý đơn hàng và orchestrate order saga:

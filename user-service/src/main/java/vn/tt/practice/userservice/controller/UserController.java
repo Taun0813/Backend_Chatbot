@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.tt.practice.userservice.dto.*;
@@ -14,6 +15,9 @@ import vn.tt.practice.userservice.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/users")
@@ -21,26 +25,38 @@ import java.util.Map;
 @Tag(name = "User Controller", description = "APIs for user authentication and management")
 public class UserController {
 
+    private static final String HEADER_USER_ROLES = "X-User-Roles";
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
+
     private final UserService userService;
     private final AddressService addressService;
 
-    // Admin endpoints
-
-    @PutMapping("/{id}/role")
-    @Operation(summary = "Update user role (Admin)")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> request) {
-        String role = request.get("role"); // Assuming json is {"role": "ADMIN"} or similar, doc says "additionalProperties: string"
-        // Actually doc requestBody content is generic map.
-        
-        UserResponse response = userService.updateUserRole(id, role);
-        return ok(response);
+    private static Set<String> parseRoles(String rolesHeader) {
+        if (rolesHeader == null || rolesHeader.isBlank()) return Set.of();
+        return Stream.of(rolesHeader.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
     }
 
+    private static boolean hasAdminOrSuperAdmin(Set<String> roles) {
+        return roles.contains(ROLE_ADMIN) || roles.contains(ROLE_SUPER_ADMIN);
+    }
+
+    private static boolean hasSuperAdmin(Set<String> roles) {
+        return roles.contains(ROLE_SUPER_ADMIN);
+    }
+
+    // Admin endpoints (ADMIN or SUPER_ADMIN)
+
     @GetMapping
-    @Operation(summary = "Get all users (Admin)")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(Pageable pageable) {
+    @Operation(summary = "Get all users (ADMIN only)")
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(
+            Pageable pageable,
+            @RequestHeader(value = HEADER_USER_ROLES, required = false) String rolesHeader) {
+        if (!hasAdminOrSuperAdmin(parseRoles(rolesHeader))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.<Page<UserResponse>>builder()
+                            .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build()).build());
+        }
         Page<UserResponse> response = userService.getAllUsers(pageable);
         return ResponseEntity.ok(ApiResponse.<Page<UserResponse>>builder()
                 .data(response)
@@ -49,9 +65,48 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get user by ID (Admin)")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
+    @Operation(summary = "Get user by ID (ADMIN only)")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+            @PathVariable Long id,
+            @RequestHeader(value = HEADER_USER_ROLES, required = false) String rolesHeader) {
+        if (!hasAdminOrSuperAdmin(parseRoles(rolesHeader))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.<UserResponse>builder()
+                            .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build()).build());
+        }
         return ok(userService.getUserById(id));
+    }
+
+    @PutMapping("/{id}/role")
+    @Operation(summary = "Update user role (SUPER_ADMIN only)")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            @RequestHeader(value = HEADER_USER_ROLES, required = false) String rolesHeader) {
+        if (!hasSuperAdmin(parseRoles(rolesHeader))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.<UserResponse>builder()
+                            .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build()).build());
+        }
+        String role = request.get("role");
+        UserResponse response = userService.updateUserRole(id, role);
+        return ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete user (SUPER_ADMIN only)")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable Long id,
+            @RequestHeader(value = HEADER_USER_ROLES, required = false) String rolesHeader) {
+        if (!hasSuperAdmin(parseRoles(rolesHeader))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.<Void>builder()
+                            .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build()).build());
+        }
+        userService.deleteUser(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
+                .build());
     }
 
     // Current User endpoints

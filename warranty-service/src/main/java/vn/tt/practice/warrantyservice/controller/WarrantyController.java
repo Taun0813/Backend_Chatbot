@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.tt.practice.warrantyservice.dto.WarrantyClaimDTO;
 import vn.tt.practice.warrantyservice.dto.WarrantyClaimRequest;
@@ -28,10 +27,13 @@ public class WarrantyController {
 
     private Long getUserId(HttpServletRequest request) {
         String userIdHeader = request.getHeader("X-User-Id");
-        if (userIdHeader != null) {
-            return Long.parseLong(userIdHeader);
-        }
-        return 1L; // Default for testing
+        return userIdHeader != null ? Long.parseLong(userIdHeader) : null;
+    }
+
+    private boolean hasAdminRole(HttpServletRequest request) {
+        String roles = request.getHeader("X-User-Roles");
+        if (roles == null) return false;
+        return roles.contains("ROLE_ADMIN") || roles.contains("ROLE_SUPER_ADMIN");
     }
 
     @GetMapping("/order/{orderId}")
@@ -69,21 +71,28 @@ public class WarrantyController {
     }
 
     @PutMapping("/claims/{id}/status")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     @Operation(summary = "Update claim status (ADMIN)")
-    public ResponseEntity<WarrantyClaimDTO> updateClaimStatus(
+    public ResponseEntity<?> updateClaimStatus(
             @PathVariable Long id,
             @RequestParam ClaimStatus status,
-            @RequestParam(required = false) String resolution) {
+            @RequestParam(required = false) String resolution,
+            HttpServletRequest request) {
+        if (!hasAdminRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(warrantyService.updateClaimStatus(id, status, resolution));
     }
 
     @GetMapping("/claims")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     @Operation(summary = "Get all claims (ADMIN, paginated)")
-    public ResponseEntity<Page<WarrantyClaimDTO>> getAllClaims(
+    public ResponseEntity<?> getAllClaims(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(warrantyService.getAllClaims(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request) {
+        if (!hasAdminRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Page<WarrantyClaimDTO> result = warrantyService.getAllClaims(page, size);
+        return ResponseEntity.ok(result);
     }
 }

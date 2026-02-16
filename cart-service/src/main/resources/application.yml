@@ -24,6 +24,9 @@ spring:
     port: 5672
     username: admin
     password: rabbitmq_password
+  flyway:
+    validate-on-migrate: false
+
 
 eureka:
   client:

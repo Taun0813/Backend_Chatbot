@@ -3,7 +3,6 @@ package vn.tt.practice.paymentservice.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,8 +149,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PaymentDTO> getAllPayments(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<PaymentDTO> getAllPayments(Pageable pageable) {
         return paymentRepository.findAll(pageable).map(this::toDTO);
     }
 

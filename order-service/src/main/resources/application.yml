@@ -17,6 +17,14 @@ spring:
       hibernate:
         format_sql: true
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: rabbitmq_password
+  flyway:
+    validate-on-migrate: false
+
 server:
   port: 8084
 

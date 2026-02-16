@@ -83,6 +83,12 @@ public class UserService {
         return mapToResponse(user);
     }
 
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = getUserEntity(id);
+        userRepository.delete(user);
+    }
+
     private User getUserEntity(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

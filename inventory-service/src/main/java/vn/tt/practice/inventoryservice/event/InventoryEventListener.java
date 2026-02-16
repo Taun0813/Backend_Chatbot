@@ -6,14 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.inventoryservice.config.RabbitMQConfig;
-import vn.tt.practice.inventoryservice.model.Inventory;
-import vn.tt.practice.inventoryservice.model.InventoryReservation;
-import vn.tt.practice.inventoryservice.repository.InventoryRepository;
-import vn.tt.practice.inventoryservice.repository.InventoryReservationRepository;
 import vn.tt.practice.inventoryservice.service.InventoryService;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @Component
@@ -21,8 +14,6 @@ import java.time.temporal.ChronoUnit;
 public class InventoryEventListener {
 
     private final InventoryService inventoryService;
-    private final InventoryRepository inventoryRepository;
-    private final InventoryReservationRepository reservationRepository;
     private final InventoryEventPublisher eventPublisher;
 
     @RabbitListener(queues = RabbitMQConfig.ORDER_CREATED_QUEUE)
@@ -77,7 +68,7 @@ public class InventoryEventListener {
 
             // release any reserved reservations of this order (PENDING)
             try {
-                releaseReservations(orderId);
+                inventoryService.releaseReservation(orderId);
             } catch (Exception ex) {
                 log.error("Compensation release failed. orderId={}", orderId, ex);
             }
@@ -99,10 +90,8 @@ public class InventoryEventListener {
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         log.info("Received PaymentCompletedEvent: orderId={}, transactionId={}", 
                 event.getOrderId(), event.getTransactionId());
-        
         try {
-            Long orderId = event.getOrderId();
-            confirmReservations(orderId);
+            inventoryService.confirmReservation(event.getOrderId());
         } catch (Exception e) {
             log.error("Error processing PaymentCompletedEvent", e);
             throw e;
@@ -113,10 +102,8 @@ public class InventoryEventListener {
     @Transactional
     public void handlePaymentFailed(PaymentFailedEvent event) {
         log.info("Received PaymentFailedEvent: orderId={}, reason={}", event.getOrderId(), event.getReason());
-        
         try {
-            Long orderId = event.getOrderId();
-            releaseReservations(orderId);
+            inventoryService.releaseReservation(event.getOrderId());
         } catch (Exception e) {
             log.error("Error processing PaymentFailedEvent", e);
             throw e;
@@ -127,66 +114,11 @@ public class InventoryEventListener {
     @Transactional
     public void handleOrderCancelled(OrderCancelledEvent event) {
         log.info("Received OrderCancelledEvent: orderId={}", event.getOrderId());
-        
         try {
-            Long orderId = event.getOrderId();
-            releaseReservations(orderId);
+            inventoryService.releaseReservation(event.getOrderId());
         } catch (Exception e) {
             log.error("Error processing OrderCancelledEvent", e);
             throw e;
-        }
-    }
-
-    @Transactional
-    public void confirmReservations(Long orderId) {
-        var reservations = reservationRepository.findAllByOrderId(orderId);
-
-        for (InventoryReservation reservation : reservations) {
-            if (reservation.getStatus() != InventoryReservation.ReservationStatus.PENDING) continue;
-
-            Inventory inventory = reservation.getInventory();
-            Long productId = inventory.getProductId();
-            int qty = reservation.getQuantity();
-
-            if (inventory.getReservedQuantity() < qty) {
-                throw new IllegalStateException("Reserved inconsistent productId=" + productId);
-            }
-
-            inventory.setReservedQuantity(inventory.getReservedQuantity() - qty);
-            inventory.setUpdatedAt(Instant.now());
-            inventoryRepository.save(inventory);
-
-            reservation.setStatus(InventoryReservation.ReservationStatus.CONFIRMED);
-            reservationRepository.save(reservation);
-
-            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
-        }
-    }
-
-    @Transactional
-    public void releaseReservations(Long orderId) {
-        var reservations = reservationRepository.findAllByOrderId(orderId);
-
-        for (InventoryReservation reservation : reservations) {
-            if (reservation.getStatus() != InventoryReservation.ReservationStatus.PENDING) continue;
-
-            Inventory inventory = reservation.getInventory();
-            Long productId = inventory.getProductId();
-            int qty = reservation.getQuantity();
-
-            if (inventory.getReservedQuantity() < qty) {
-                throw new IllegalStateException("Reserved inconsistent productId=" + productId);
-            }
-
-            inventory.setAvailableQuantity(inventory.getAvailableQuantity() + qty);
-            inventory.setReservedQuantity(inventory.getReservedQuantity() - qty);
-            inventory.setUpdatedAt(Instant.now());
-            inventoryRepository.save(inventory);
-
-            reservation.setStatus(InventoryReservation.ReservationStatus.RELEASED);
-            reservationRepository.save(reservation);
-
-            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         }
     }
 

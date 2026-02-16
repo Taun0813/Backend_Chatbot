@@ -44,11 +44,11 @@
 
     <dependencyManagement>
         <dependencies>
-<!--            <dependency>-->
-<!--                <groupId>org.springframework.boot</groupId>-->
-<!--                <artifactId>spring-boot-starter-amqp</artifactId>-->
-<!--                <version>${spring-amqp.version}</version>-->
-<!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>org.springframework.boot</groupId>-->
+            <!--                <artifactId>spring-boot-starter-amqp</artifactId>-->
+            <!--                <version>${spring-amqp.version}</version>-->
+            <!--            </dependency>-->
 
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -73,12 +73,11 @@
         </dependency>
 
 
-        <!-- Spring Boot Starters -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
+        <!--        &lt;!&ndash; Spring Boot Starters &ndash;&gt;-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-web</artifactId>-->
+        <!--        </dependency>-->
 
 
         <dependency>
@@ -95,7 +94,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
-
 
 
         <!-- Spring Cloud -->
@@ -141,12 +139,12 @@
 
 
         <!--        &lt;!&ndash; Source: https://mvnrepository.com/artifact/org.mapstruct/mapstruct-processor &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>org.mapstruct</groupId>-->
-<!--            <artifactId>mapstruct-processor</artifactId>-->
-<!--            <version>1.5.5.Final</version>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.mapstruct</groupId>-->
+        <!--            <artifactId>mapstruct-processor</artifactId>-->
+        <!--            <version>1.5.5.Final</version>-->
+        <!--            <scope>compile</scope>-->
+        <!--        </dependency>-->
 
         <!-- Testing -->
         <dependency>
@@ -162,13 +160,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.6.0</version>
+            <version>2.7.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
-
 
 
     <build>

@@ -21,18 +21,18 @@
   ],
   "tags": [
     {
-      "name": "Cart Management",
-      "description": "APIs for managing shopping cart"
+      "name": "Cart Controller",
+      "description": "APIs for shopping cart management"
     }
   ],
   "paths": {
     "/carts/items/{itemId}": {
       "put": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Update cart item quantity",
-        "operationId": "updateCartItem",
+        "operationId": "updateItem",
         "parameters": [
           {
             "name": "itemId",
@@ -60,7 +60,10 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/CartDTO"
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -69,7 +72,7 @@
       },
       "delete": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Remove item from cart",
         "operationId": "removeItem",
@@ -86,7 +89,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -94,7 +107,7 @@
     "/carts/items": {
       "post": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Add item to cart",
         "operationId": "addItem",
@@ -114,7 +127,10 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/CartDTO"
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -125,7 +141,7 @@
     "/carts/{userId}": {
       "get": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Get user's cart (ADMIN)",
         "operationId": "getCartByUserId",
@@ -146,7 +162,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/CartDTO"
+                  "type": "object"
                 }
               }
             }
@@ -157,10 +173,10 @@
     "/carts/me": {
       "get": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Get current user's cart",
-        "operationId": "getMyCart",
+        "operationId": "getCart",
         "responses": {
           "200": {
             "description": "OK",
@@ -178,13 +194,23 @@
     "/carts/clear": {
       "delete": {
         "tags": [
-          "Cart Management"
+          "Cart Controller"
         ],
         "summary": "Clear cart",
         "operationId": "clearCart",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -198,6 +224,24 @@
         ],
         "type": "object",
         "properties": {
+          "quantity": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AddToCartRequest": {
+        "required": [
+          "productId",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer",
+            "format": "int64"
+          },
           "quantity": {
             "minimum": 1,
             "type": "integer",
@@ -262,24 +306,6 @@
           },
           "subtotal": {
             "type": "number"
-          }
-        }
-      },
-      "AddToCartRequest": {
-        "required": [
-          "productId",
-          "quantity"
-        ],
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "quantity": {
-            "minimum": 1,
-            "type": "integer",
-            "format": "int32"
           }
         }
       }

@@ -1,3 +1,69 @@
+## Cart Service
+
+### Chức năng
+
+- Quản lý giỏ hàng của người dùng:
+  - Auto-create cart khi user thêm sản phẩm lần đầu.
+  - Thêm/sửa/xoá sản phẩm trong giỏ.
+  - Tự tính subtotal, tổng tiền, tổng số lượng.
+  - Clear cart khi order được tạo thành công.
+- Tích hợp `product-service` để lấy thông tin sản phẩm.
+
+### Cổng
+
+- Mặc định: `8086`
+
+### Bảng chính
+
+- `carts`:
+  - `user_id` (unique), `total_amount`, `total_items`, timestamps.
+- `cart_items`:
+  - `cart_id`, `product_id`, `product_name`, `product_price`, `quantity`, `subtotal`, timestamps.
+
+### Endpoint chính
+
+- `GET /carts/me` – lấy giỏ hàng của user hiện tại.
+- `POST /carts/items` – thêm 1 sản phẩm vào giỏ (body `AddToCartRequest`).
+- `PUT /carts/items/{itemId}` – cập nhật quantity (body `UpdateCartItemRequest`).
+- `DELETE /carts/items/{itemId}` – xoá 1 item theo id.
+- `DELETE /carts/clear` – clear toàn bộ giỏ.
+- `GET /carts/{userId}` – xem giỏ hàng của user bất kỳ (ADMIN).
+
+### Business logic
+
+1. Auto-create cart khi chưa tồn tại và user thêm item.
+2. Fetch product từ `product-service`:
+   - Qua Feign `ProductServiceClient.getProductById(productId)`.
+   - Dùng `name`, `price` từ ProductDTO.
+3. Nếu product đã có trong giỏ:
+   - Chỉ tăng quantity, cập nhật subtotal.
+4. `updateCartTotals`:
+   - `total_items` = tổng quantity của mọi item.
+   - `total_amount` = tổng subtotal.
+5. Sau khi `OrderCreatedEvent`:
+   - `CartEventListener` gọi `clearCart(userId)`.
+6. Khi `ProductDeletedEvent`:
+   - Xoá sản phẩm đó khỏi mọi giỏ (`removeProductFromCarts`), cập nhật lại totals.
+
+### Sự kiện
+
+- Từ RabbitMQ:
+  - `order.created` (từ `order.exchange`) → clear cart user tương ứng.
+  - `product.deleted` (từ `domain-events-exchange`) → xoá sản phẩm khỏi tất cả cart.
+
+### Bảo mật
+
+- SecurityConfig:
+  - Cho phép `/carts/**`.
+- Controller:
+  - `GET /carts/{userId}` yêu cầu ADMIN/SUPER_ADMIN, check `X-User-Roles`.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Cart Service (Port 8086)
 
 **Chức năng**: Quản lý giỏ hàng của người dùng:

@@ -39,15 +39,21 @@ public class AuthController {
                 .build());
     }
 
-    @PostMapping("/refresh-token")
-    @Operation(summary = "Refresh token")
-    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody Map<String, String> request) {
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh token (alias)")
+    public ResponseEntity<ApiResponse<LoginResponse>> refresh(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
         LoginResponse response = authService.refreshToken(refreshToken);
         return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
                 .data(response)
                 .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
                 .build());
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh token")
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshTokenEndpoint(@RequestBody Map<String, String> request) {
+        return refresh(request);
     }
 
     @PostMapping("/logout")

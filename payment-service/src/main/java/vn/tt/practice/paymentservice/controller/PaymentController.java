@@ -2,12 +2,13 @@ package vn.tt.practice.paymentservice.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.tt.practice.paymentservice.dto.*;
 import vn.tt.practice.paymentservice.service.PaymentService;
@@ -19,6 +20,12 @@ import vn.tt.practice.paymentservice.service.PaymentService;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
+    private boolean hasAdminRole(HttpServletRequest request) {
+        String roles = request.getHeader("X-User-Roles");
+        if (roles == null) return false;
+        return roles.contains("ROLE_ADMIN") || roles.contains("ROLE_SUPER_ADMIN");
+    }
 
     @PostMapping("/process")
     @Operation(summary = "Process payment")
@@ -45,18 +52,20 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/refund")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     @Operation(summary = "Refund payment (ADMIN)")
-    public ResponseEntity<PaymentResponse> refundPayment(@PathVariable Long id) {
+    public ResponseEntity<?> refundPayment(@PathVariable Long id, HttpServletRequest request) {
+        if (!hasAdminRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(paymentService.refundPayment(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     @Operation(summary = "Get all payments (ADMIN, paginated)")
-    public ResponseEntity<Page<PaymentDTO>> getAllPayments(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(paymentService.getAllPayments(page, size));
+    public ResponseEntity<?> getAllPayments(Pageable pageable, HttpServletRequest request) {
+        if (!hasAdminRole(request)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(paymentService.getAllPayments(pageable));
     }
 }

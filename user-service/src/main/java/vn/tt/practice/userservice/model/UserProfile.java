@@ -16,10 +16,6 @@ import lombok.Setter;
 @Builder
 public class UserProfile extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
