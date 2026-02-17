@@ -22,11 +22,7 @@ import vn.tt.practice.apigateway.util.JwtUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * Global filter: extract JWT from Authorization header, validate signature and expiration,
- * extract user id and roles, forward via headers. Allow /api/auth/** without token.
- * Block invalid/expired tokens with 401.
- */
+
 @Slf4j
 @Component
 @RequiredArgsConstructor

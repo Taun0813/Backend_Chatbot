@@ -1,0 +1,208 @@
+# Chạy stack từ Docker Hub - chỉ cần: docker compose -f docker-compose.hub.yml up -d
+# Set DOCKERHUB_USER trong .env (ví dụ: DOCKERHUB_USER=yourusername) hoặc export DOCKERHUB_USER=yourusername
+
+services:
+  postgresql:
+    image: postgres:15-alpine
+    container_name: ai-agent-postgres
+    environment:
+      POSTGRES_DB: ai_agent
+      POSTGRES_USER: ai_agent
+      POSTGRES_PASSWORD: "123"
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-agent-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ai-agent-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: rabbitmq_password
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  discovery-service:
+    image: ${DOCKERHUB_USER:-youruser}/discovery-service:latest
+    container_name: discovery-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+    depends_on:
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api-gateway:
+    image: ${DOCKERHUB_USER:-youruser}/api-gateway:latest
+    container_name: api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8181:8181"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+
+  user-service:
+    image: ${DOCKERHUB_USER:-youruser}/user-service:latest
+    container_name: user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  product-service:
+    image: ${DOCKERHUB_USER:-youruser}/product-service:latest
+    container_name: product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8082:8082"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  order-service:
+    image: ${DOCKERHUB_USER:-youruser}/order-service:latest
+    container_name: order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8084:8084"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  payment-service:
+    image: ${DOCKERHUB_USER:-youruser}/payment-service:latest
+    container_name: payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8085:8085"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  cart-service:
+    image: ${DOCKERHUB_USER:-youruser}/cart-service:latest
+    container_name: cart-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8086:8086"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  inventory-service:
+    image: ${DOCKERHUB_USER:-youruser}/inventory-service:latest
+    container_name: inventory-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8083:8083"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  warranty-service:
+    image: ${DOCKERHUB_USER:-youruser}/warranty-service:latest
+    container_name: warranty-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8088:8088"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  recommendation-service:
+    image: ${DOCKERHUB_USER:-youruser}/recommendation-service:latest
+    container_name: recommendation-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8089:8089"
+    networks:
+      - app-network
+    depends_on:
+      discovery-service: { condition: service_healthy }
+      postgresql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+networks:
+  app-network:
+    driver: bridge

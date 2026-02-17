@@ -31,7 +31,6 @@ public class SecurityConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        // ✅ dùng patterns để hỗ trợ wildcard khi allowCredentials=true
         corsConfig.setAllowedOriginPatterns(List.of("*"));
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         corsConfig.setAllowedHeaders(List.of("*"));

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
@@ -15,12 +16,11 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secret;
+//    @Value("${jwt.secret}")
+    private String secret = "your-256-bit-secret-key-change-this-in-production";
 
     private SecretKey getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public void validateToken(String token) {
@@ -31,10 +31,11 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> extractRoles(String token) {
-        return extractClaim(token, claims -> claims.get("roles", List.class));
+        String role = extractClaim(token, c -> c.get("roles", String.class));
+        return role != null ? List.of(role) : List.of();
     }
+
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);

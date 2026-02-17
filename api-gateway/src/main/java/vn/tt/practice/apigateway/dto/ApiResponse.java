@@ -8,11 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-/**
- * Chuẩn response JSON thống nhất cho toàn hệ thống.
- * Gateway và các API con (user, product, order...) nên trả về cùng format này để client
- * gọi qua gateway nhận response đồng nhất: success, message, data, timestamp (và code/path khi lỗi).
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,24 +19,15 @@ public class ApiResponse<T> {
     private String message;
     private T data;
 
-    /**
-     * Thời điểm trả về (ISO-8601).
-     */
     private String timestamp;
 
-    /**
-     * Mã lỗi HTTP hoặc mã nghiệp vụ (ví dụ: UNAUTHORIZED, RATE_LIMIT_EXCEEDED).
-     */
+
     private String code;
 
-    /**
-     * Đường dẫn request gây lỗi (hữu ích cho client log/debug).
-     */
+
     private String path;
 
-    /**
-     * Request ID từ header X-Request-Id (nếu có).
-     */
+
     private String requestId;
 
     public static <T> ApiResponse<T> success(T data) {

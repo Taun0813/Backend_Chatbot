@@ -36,7 +36,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://ai-agent-discovery:8761/eureka/
+      defaultZone: http://discovery-service:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
