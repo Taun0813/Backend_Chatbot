@@ -1,5 +1,6 @@
 package vn.tt.practice.recommendationservice.repository;
 
+import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import vn.tt.practice.recommendationservice.entity.UserPreference;
@@ -15,4 +16,9 @@ public interface UserPreferenceRepository extends JpaRepository<UserPreference, 
     
     @Query("SELECT up FROM UserPreference up WHERE up.userId = :userId ORDER BY up.preferenceScore DESC")
     List<UserPreference> findTopByUserIdOrderByPreferenceScoreDesc(Long userId);
+
+    @Query("select distinct up.userId from UserPreference up where up.productId = :productId")
+    List<Long> findUserIdsByProductId(@Param("productId") Long productId);
+
+    List<UserPreference> findByUserIdInOrderByUserIdAscPreferenceScoreDesc(List<Long> userIds);
 }

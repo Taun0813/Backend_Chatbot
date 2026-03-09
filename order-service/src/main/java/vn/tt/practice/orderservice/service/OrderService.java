@@ -112,16 +112,17 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderStatusHistoryDTO> getOrderStatusHistory(Long orderId) {
-        return statusHistoryRepository.findByOrder_IdOrderByCreatedAtAsc(orderId).stream()
-                .map(h -> OrderStatusHistoryDTO.builder()
-                        .id(h.getId())
-                        .orderId(h.getOrder().getId())
-                        .status(h.getStatus())
-                        .notes(h.getNotes())
-                        .createdAt(h.getCreatedAt())
-                        .createdBy(h.getCreatedBy())
-                        .build())
-                .collect(Collectors.toList());
+//        return statusHistoryRepository.findByOrder_IdOrderByCreatedAtAsc(orderId).stream()
+//                .map(h -> OrderStatusHistoryDTO.builder()
+//                        .id(h.getId())
+//                        .orderId(orderId)
+//                        .status(h.getStatus())
+//                        .notes(h.getNotes())
+//                        .createdAt(h.getCreatedAt())
+//                        .createdBy(h.getCreatedBy())
+//                        .build())
+//                .collect(Collectors.toList());
+        return statusHistoryRepository.findHistoryDto(orderId);
     }
 
     private void addStatusHistory(Order order, OrderStatus status, String notes) {

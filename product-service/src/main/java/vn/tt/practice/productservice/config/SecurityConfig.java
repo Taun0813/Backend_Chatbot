@@ -12,10 +12,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Cấu hình đơn giản: không dùng filter xác thực.
-     * Gateway validate JWT; product-service permit /products/** và /categories/**.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http

@@ -43,10 +43,15 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts(page, size));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get product by ID")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+//    @GetMapping("/{id}")
+//    @Operation(summary = "Get product by ID")
+//    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
+//        return ResponseEntity.ok(productService.getProductById(id));
+//    }
+
+    @GetMapping("/{id}/cart-info")
+    public ResponseEntity<ProductCartInfoDTO> getProductCartInfo(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductCartInfo(id));
     }
 
     @GetMapping("/search")

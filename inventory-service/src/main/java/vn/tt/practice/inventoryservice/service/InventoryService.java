@@ -107,8 +107,6 @@ public class InventoryService {
                     .referenceType("ORDER")
                     .notes("Confirm reservation for order " + orderId)
                     .build());
-
-            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         }
     }
 
@@ -142,8 +140,6 @@ public class InventoryService {
                     .referenceType("ORDER")
                     .notes("Release reservation for order " + orderId)
                     .build());
-
-            eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         }
     }
 
@@ -167,8 +163,6 @@ public class InventoryService {
                 .notes("Restock by admin")
                 .createdBy(createdBy)
                 .build());
-
-        eventPublisher.publishStockUpdated(productId, inventory.getAvailableQuantity());
         return inventory;
     }
 

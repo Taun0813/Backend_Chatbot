@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.cartservice.client.ProductServiceClient;
 import vn.tt.practice.cartservice.dto.CartDTO;
 import vn.tt.practice.cartservice.dto.CartItemDTO;
+import vn.tt.practice.cartservice.dto.CartItemResponse;
+import vn.tt.practice.cartservice.dto.ProductCartInfoDTO;
 import vn.tt.practice.cartservice.exception.CartItemNotFoundException;
 import vn.tt.practice.cartservice.exception.CartNotFoundException;
 import vn.tt.practice.cartservice.model.Cart;
@@ -31,46 +33,73 @@ public class CartService {
     }
 
     @Transactional
-    public void addItem(Long userId, Long productId, Integer quantity) {
-        ProductServiceClient.ProductDTO product = productServiceClient.getProductById(productId);
-        String productName = product != null && product.name() != null ? product.name() : "Product " + productId;
-        BigDecimal productPrice = product != null && product.price() != null ? product.price() : BigDecimal.ZERO;
+    public CartDTO addItem(Long userId, Long productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than 0");
+        }
+
+        ProductCartInfoDTO product = productServiceClient.getProductCartInfo(productId);
+
+        if (product == null) {
+            throw new IllegalArgumentException("Product not found");
+        }
+
+        if (Boolean.FALSE.equals(product.getIsActive())) {
+            throw new IllegalArgumentException("Product is inactive");
+        }
 
         Cart cart = getCart(userId);
-        CartItem existing = cart.getItems().stream()
+
+        CartItem item = cart.getItems().stream()
                 .filter(i -> i.getProductId().equals(productId))
                 .findFirst()
                 .orElse(null);
 
-        if (existing != null) {
-            existing.setQuantity(existing.getQuantity() + quantity);
-            existing.setSubtotal(existing.getProductPrice().multiply(BigDecimal.valueOf(existing.getQuantity())));
-            cartItemRepository.save(existing);
+        if (item != null) {
+            item.setQuantity(item.getQuantity() + quantity);
+            item.setProductName(product.getName());
+            item.setProductPrice(product.getPrice());
+            item.setProductImageUrl(product.getImageUrl());
+            item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            cartItemRepository.save(item);
         } else {
-            CartItem newItem = CartItem.builder()
+            item = CartItem.builder()
                     .cart(cart)
-                    .productId(productId)
-                    .productName(productName)
-                    .productPrice(productPrice)
+                    .productId(product.getId())
+                    .productName(product.getName())
+                    .productPrice(product.getPrice())
+                    .productImageUrl(product.getImageUrl())
                     .quantity(quantity)
-                    .subtotal(productPrice.multiply(BigDecimal.valueOf(quantity)))
+                    .subtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity)))
                     .build();
-            cart.getItems().add(newItem);
+
+            cartItemRepository.save(item);
+            cart.getItems().add(item);
         }
+
         updateCartTotals(cart);
         cartRepository.save(cart);
+
+        Cart latest = cartRepository.findByUserIdWithItems(userId).orElse(cart);
+        return toCartDTO(latest);
     }
 
     @Transactional
-    public void updateItemQuantity(Long userId, Long itemId, Integer quantity) {
+    public CartDTO updateItemQuantity(Long userId, Long itemId, Integer quantity) {
         CartItem item = cartItemRepository.findByIdAndCart_UserId(itemId, userId)
                 .orElseThrow(() -> new CartItemNotFoundException("Cart item not found: " + itemId));
+
         item.setQuantity(quantity);
         item.setSubtotal(item.getProductPrice().multiply(BigDecimal.valueOf(quantity)));
         cartItemRepository.save(item);
-        Cart cart = cartRepository.findByUserIdWithItems(userId).orElseThrow();
+
+        Cart cart = cartRepository.findByUserIdWithItems(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+
         updateCartTotals(cart);
         cartRepository.save(cart);
+
+        return toCartDTO(cart);
     }
 
     @Transactional
@@ -146,8 +175,10 @@ public class CartService {
                         .productPrice(i.getProductPrice())
                         .quantity(i.getQuantity())
                         .subtotal(i.getSubtotal())
+                        .productImageUrl(i.getProductImageUrl())
                         .build())
                 .collect(Collectors.toList());
+
         return CartDTO.builder()
                 .id(cart.getId())
                 .userId(cart.getUserId())

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.tt.practice.cartservice.dto.AddToCartRequest;
 import vn.tt.practice.cartservice.dto.CartDTO;
+import vn.tt.practice.cartservice.dto.CartItemResponse;
 import vn.tt.practice.cartservice.dto.UpdateCartItemRequest;
 import vn.tt.practice.cartservice.service.CartService;
 
@@ -51,26 +52,24 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    @Operation(summary = "Add item to cart")
-    public ResponseEntity<Map<String, String>> addItem(
+    public ResponseEntity<CartDTO> addItem(
             @RequestBody @Valid AddToCartRequest req,
             HttpServletRequest request
     ) {
         Long userId = getUserId(request);
-        cartService.addItem(userId, req.getProductId(), req.getQuantity());
-        return ResponseEntity.ok(Map.of("message", "Added to cart"));
+        CartDTO res = cartService.addItem(userId, req.getProductId(), req.getQuantity());
+        return ResponseEntity.ok(res);
     }
 
     @PutMapping("/items/{itemId}")
-    @Operation(summary = "Update cart item quantity")
-    public ResponseEntity<Map<String, String>> updateItem(
+    public ResponseEntity<CartDTO> updateItem(
             @PathVariable Long itemId,
             @RequestBody @Valid UpdateCartItemRequest req,
             HttpServletRequest request
     ) {
         Long userId = getUserId(request);
-        cartService.updateItemQuantity(userId, itemId, req.getQuantity());
-        return ResponseEntity.ok(Map.of("message", "Updated"));
+        CartDTO res = cartService.updateItemQuantity(userId, itemId, req.getQuantity());
+        return ResponseEntity.ok(res);
     }
 
     @DeleteMapping("/items/{itemId}")

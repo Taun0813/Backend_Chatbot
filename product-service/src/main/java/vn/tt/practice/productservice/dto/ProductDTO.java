@@ -18,10 +18,6 @@ public class ProductDTO {
     private String brand;
     private String model;
     private Boolean isActive;
-//    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-//    private LocalDateTime createdAt;
-//    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-//    private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
     private List<ProductImageDTO> images;

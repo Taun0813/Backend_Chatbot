@@ -34,6 +34,9 @@ public class CartItem {
     @Column(name = "product_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal productPrice;
 
+    @Column(name = "product_image_url")
+    private String productImageUrl;
+
     @Column(nullable = false)
     private Integer quantity = 1;
 

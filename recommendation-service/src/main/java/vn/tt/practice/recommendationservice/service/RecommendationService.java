@@ -30,7 +30,7 @@ public class RecommendationService {
     private final ProductRecommendationRepository recommendationRepository;
     private final ProductServiceClient productServiceClient;
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Cacheable(value = "recommendations", key = "#userId + '_' + #type + '_' + #limit")
     public List<RecommendationDTO> getRecommendations(Long userId, RecommendationType type, int limit) {
         log.info("Getting {} recommendations for userId: {}, type: {}", limit, userId, type);
@@ -64,27 +64,35 @@ public class RecommendationService {
 
     @Transactional(readOnly = true)
     public List<RecommendationDTO> getRelatedProducts(Long productId, int limit) {
-        log.info("Getting {} related products for productId: {}", limit, productId);
+        List<Long> userIds = userPreferenceRepository.findUserIdsByProductId(productId);
+        if (userIds.isEmpty()) return List.of();
 
-        // Get user preferences for this product to find similar users
-        List<UserPreference> preferences = userPreferenceRepository.findByProductId(productId);
-        
-        // Find products frequently viewed/purchased together
-        Set<Long> relatedProductIds = new HashSet<>();
-        for (UserPreference pref : preferences) {
-            List<UserPreference> userPrefs = userPreferenceRepository
-                    .findByUserIdOrderByPreferenceScoreDesc(pref.getUserId());
-            userPrefs.stream()
-                    .filter(p -> !p.getProductId().equals(productId))
-                    .limit(5)
-                    .forEach(p -> relatedProductIds.add(p.getProductId()));
+        List<UserPreference> allPrefs =
+                userPreferenceRepository.findByUserIdInOrderByUserIdAscPreferenceScoreDesc(userIds);
+
+        Set<Long> relatedProductIds = new LinkedHashSet<>(); // giữ thứ tự add
+        Long currentUser = null;
+        int takenForUser = 0;
+
+        for (UserPreference p : allPrefs) {
+            if (!Objects.equals(currentUser, p.getUserId())) {
+                currentUser = p.getUserId();
+                takenForUser = 0;
+            }
+            if (takenForUser >= 5) continue;
+            if (p.getProductId().equals(productId)) continue;
+
+            relatedProductIds.add(p.getProductId());
+            takenForUser++;
+            if (relatedProductIds.size() >= limit) break;
         }
 
+        // IMPORTANT: getProductRecommendation phải không insert DB nếu method là readOnly
         return relatedProductIds.stream()
                 .limit(limit)
-                .map(this::getProductRecommendation)
+                .map(this::getProductRecommendation) // đổi sang hàm chỉ đọc
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void recordView(Long userId, Long productId, Long categoryId) {

@@ -20,23 +20,9 @@ public class InventoryEventListener {
     @Transactional
     public void handleOrderCreated(OrderCreatedEvent event) {
         Long orderId = event.getOrderId();
-        log.info("Received OrderCreatedEvent: orderId={}, items={}", orderId, event.getItems());
-
-//        // idempotent: nếu đã có reservation (PENDING/CONFIRMED) thì bỏ qua
-//        if (reservationRepository.existsByOrderIdAndStatusIn(
-//                orderId,
-//                java.util.List.of(
-//                        InventoryReservation.ReservationStatus.PENDING,
-//                        InventoryReservation.ReservationStatus.CONFIRMED
-//                ))) {
-//            log.info("Skip OrderCreatedEvent because reservations already exist. orderId={}", orderId);
-//            return;
-//        }
-
         var items = event.getItems();
 
         try {
-            // Reserve ALL items
             for (OrderItemEvent item : items) {
                 var res = inventoryService.reserve(
                         vn.tt.practice.inventoryservice.dto.Request.builder()
@@ -46,7 +32,6 @@ public class InventoryEventListener {
                                 .build()
                 );
 
-                // QUAN TRỌNG: reserve() của bạn không throw khi thiếu hàng -> phải check ở đây
                 if (res == null || !Boolean.TRUE.equals(res.getReserved())) {
                     throw new IllegalStateException(
                             "Reservation failed for productId=" + item.getProductId()
@@ -56,17 +41,12 @@ public class InventoryEventListener {
                 }
             }
 
-            // ALL ok -> publish success (per item hoặc 1 event tổng)
-            for (OrderItemEvent item : items) {
-                eventPublisher.publishInventoryReserved(orderId, item.getProductId(), item.getQuantity());
-            }
-
+            eventPublisher.publishInventoryReserved(orderId);
             log.info("Reserved inventory for entire order successfully. orderId={}", orderId);
 
         } catch (Exception e) {
             log.error("Reserve failed. Compensating by releasing reservations. orderId={}", orderId, e);
 
-            // release any reserved reservations of this order (PENDING)
             try {
                 inventoryService.releaseReservation(orderId);
             } catch (Exception ex) {
@@ -78,9 +58,22 @@ public class InventoryEventListener {
                     "Failed to reserve inventory for orderId=" + orderId + ". reason=" + e.getMessage()
             );
 
-            // Nếu bạn muốn Rabbit retry thì giữ throw (nhưng nhớ idempotent + tránh spam event fail).
+            if (isBusinessReservationError(e)) {
+                log.warn("Business reservation error -> ACK message (no retry). orderId={}", orderId);
+                return;
+            }
+
             throw e;
         }
+    }
+
+    private boolean isBusinessReservationError(Exception e) {
+        String msg = e.getMessage();
+        if (msg == null) return false;
+
+        return msg.contains("Inventory not found")
+                || msg.contains("Out of stock")
+                || msg.contains("Reservation failed for productId=");
     }
 
 

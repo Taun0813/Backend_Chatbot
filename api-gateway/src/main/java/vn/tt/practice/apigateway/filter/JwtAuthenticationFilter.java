@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
 
         // Allow /api/auth/** without token
-        if (path.startsWith("/api/auth/")) {
+        if (path.startsWith("/api/auth/") || path.startsWith("/products/")) {
             return chain.filter(exchange);
         }
 
