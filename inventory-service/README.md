@@ -1,3 +1,61 @@
+## Inventory Service
+
+### Chức năng
+
+- Quản lý tồn kho theo sản phẩm.
+- Reservation tồn kho cho order:
+  - Reserve khi order được tạo.
+  - Confirm khi thanh toán thành công.
+  - Release khi order thất bại/hủy.
+- Ghi lại lịch sử giao dịch tồn kho.
+
+### Cổng
+
+- Mặc định: `8083`
+
+### Bảng chính
+
+- `inventory`
+- `inventory_reservations`
+- `inventory_transactions`
+- Index theo `product_id`, `order_id` để tối ưu truy vấn.
+
+### Endpoint chính
+
+- `GET /inventory/{productId}` – lấy thông tin tồn kho.
+- `PUT /inventory/{productId}/reserve` – reserve cho `orderId`.
+- `PUT /inventory/{productId}/release` – release khi hủy/failed.
+- `PUT /inventory/{productId}/confirm` – confirm khi success.
+- `PUT /inventory/{productId}/restock` – nhập thêm hàng (ADMIN).
+- `GET /inventory/transactions` – lịch sử transaction (ADMIN, paginated).
+
+### Sự kiện
+
+- Nhận từ `order-service` qua RabbitMQ:
+  - `OrderCreatedEvent` → reserve stock.
+  - `OrderFailedEvent` → release stock.
+  - `OrderPaidEvent` → confirm và trừ tồn kho.
+- Phát:
+  - `StockUpdatedEvent` khi có thay đổi số lượng.
+
+### Bảo mật
+
+- SecurityConfig:
+  - Cho phép các endpoint inventory, swagger, actuator.
+- Controller:
+  - `restock`, `transactions` yêu cầu ADMIN (`X-User-Roles`).
+
+### Khác
+
+- Dùng `@EnableScheduling` để dọn dẹp reservation hết hạn định kỳ.
+- `InventoryTransaction` lưu loại giao dịch: RESERVE, RELEASE, CONFIRM, IMPORT.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Inventory Service (Port 8083)
 
 **Chức năng**: Quản lý tồn kho và đặt giữ hàng (reservation) cho các đơn hàng.  

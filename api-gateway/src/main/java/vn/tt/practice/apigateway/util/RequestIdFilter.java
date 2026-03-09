@@ -21,7 +21,7 @@ public class RequestIdFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        
+
         String requestId = request.getHeaders().getFirst(REQUEST_ID_HEADER);
         if (requestId == null || requestId.isEmpty()) {
             requestId = UUID.randomUUID().toString();

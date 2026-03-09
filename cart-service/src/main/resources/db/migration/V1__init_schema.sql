@@ -13,6 +13,7 @@ CREATE TABLE cart_items (
     product_id BIGINT NOT NULL,
     product_name VARCHAR(255) NOT NULL,
     product_price DECIMAL(12, 2) NOT NULL,
+    product_image_url VARCHAR(1000),
     quantity INT NOT NULL DEFAULT 1,
     subtotal DECIMAL(12, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -1,19 +1,32 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "OpenAPI definition",
-    "version": "v0"
+    "title": "User Service API",
+    "description": "User management: authentication, registration, profile management, role-based access control. JWT-based authentication with refresh token support.",
+    "contact": {
+      "name": "E-Commerce Team",
+      "email": "dev@ecommerce.local"
+    },
+    "version": "1.0.0"
   },
   "servers": [
     {
       "url": "http://localhost:8081",
-      "description": "Generated server url"
+      "description": "Local (direct)"
+    },
+    {
+      "url": "http://localhost:8181",
+      "description": "Via API Gateway"
     }
   ],
   "tags": [
     {
       "name": "User Controller",
       "description": "APIs for user authentication and management"
+    },
+    {
+      "name": "Auth Controller",
+      "description": "APIs for user authentication"
     }
   ],
   "paths": {
@@ -22,7 +35,7 @@
         "tags": [
           "User Controller"
         ],
-        "summary": "Update user role (Admin)",
+        "summary": "Update user role (SUPER_ADMIN only)",
         "operationId": "updateUserRole",
         "parameters": [
           {
@@ -32,6 +45,14 @@
             "schema": {
               "type": "integer",
               "format": "int64"
+            }
+          },
+          {
+            "name": "X-User-Roles",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -296,10 +317,10 @@
         }
       }
     },
-    "/users/auth/register": {
+    "/auth/register": {
       "post": {
         "tags": [
-          "User Controller"
+          "Auth Controller"
         ],
         "summary": "Register user",
         "operationId": "register",
@@ -327,13 +348,13 @@
         }
       }
     },
-    "/users/auth/refresh-token": {
+    "/auth/refresh": {
       "post": {
         "tags": [
-          "User Controller"
+          "Auth Controller"
         ],
-        "summary": "Refresh token",
-        "operationId": "refreshToken",
+        "summary": "Refresh token (alias)",
+        "operationId": "refresh",
         "requestBody": {
           "content": {
             "application/json": {
@@ -361,10 +382,44 @@
         }
       }
     },
-    "/users/auth/logout": {
+    "/auth/refresh-token": {
       "post": {
         "tags": [
-          "User Controller"
+          "Auth Controller"
+        ],
+        "summary": "Refresh token",
+        "operationId": "refreshTokenEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth Controller"
         ],
         "summary": "Logout user",
         "operationId": "logout",
@@ -382,8 +437,8 @@
             "in": "header",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -401,10 +456,10 @@
         }
       }
     },
-    "/users/auth/login": {
+    "/auth/login": {
       "post": {
         "tags": [
-          "User Controller"
+          "Auth Controller"
         ],
         "summary": "Login user",
         "operationId": "login",
@@ -437,7 +492,7 @@
         "tags": [
           "User Controller"
         ],
-        "summary": "Get all users (Admin)",
+        "summary": "Get all users (ADMIN only)",
         "operationId": "getAllUsers",
         "parameters": [
           {
@@ -446,6 +501,14 @@
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "X-User-Roles",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -468,7 +531,7 @@
         "tags": [
           "User Controller"
         ],
-        "summary": "Get user by ID (Admin)",
+        "summary": "Get user by ID (ADMIN only)",
         "operationId": "getUserById",
         "parameters": [
           {
@@ -479,6 +542,14 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "name": "X-User-Roles",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -488,6 +559,44 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseUserResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User Controller"
+        ],
+        "summary": "Delete user (SUPER_ADMIN only)",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "X-User-Roles",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
                 }
               }
             }
@@ -769,15 +878,15 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
           "first": {
             "type": "boolean"
           },
           "last": {
             "type": "boolean"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
@@ -797,16 +906,16 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "paged": {
+            "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
-            "type": "boolean"
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           },
           "unpaged": {
             "type": "boolean"
@@ -840,6 +949,13 @@
             "$ref": "#/components/schemas/Meta"
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }

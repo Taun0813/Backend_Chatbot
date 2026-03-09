@@ -24,6 +24,7 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
+
     public String generateToken(Authentication authentication) {
         Object principal = authentication.getPrincipal();
         Long userId;

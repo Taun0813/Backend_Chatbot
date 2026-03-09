@@ -21,15 +21,15 @@
   ],
   "tags": [
     {
-      "name": "Order Management",
-      "description": "APIs for managing orders"
+      "name": "Order Controller",
+      "description": "APIs for order management"
     }
   ],
   "paths": {
     "/orders/{id}/status": {
       "put": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Update order status (ADMIN)",
         "operationId": "updateOrderStatus",
@@ -60,7 +60,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderDTO"
+                  "type": "object"
                 }
               }
             }
@@ -71,7 +71,7 @@
     "/orders/{id}/cancel": {
       "put": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Cancel order",
         "operationId": "cancelOrder",
@@ -103,29 +103,17 @@
     "/orders": {
       "get": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Get all orders (ADMIN, paginated)",
         "operationId": "getAllOrders",
         "parameters": [
           {
-            "name": "page",
+            "name": "pageable",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 0
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
+              "$ref": "#/components/schemas/Pageable"
             }
           }
         ],
@@ -135,7 +123,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageOrderDTO"
+                  "type": "object"
                 }
               }
             }
@@ -144,7 +132,7 @@
       },
       "post": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Create new order",
         "operationId": "createOrder",
@@ -175,10 +163,10 @@
     "/orders/{id}": {
       "get": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
-        "summary": "Get order details",
-        "operationId": "getOrderById",
+        "summary": "Get order by ID",
+        "operationId": "getOrder",
         "parameters": [
           {
             "name": "id",
@@ -207,7 +195,7 @@
     "/orders/{id}/status-history": {
       "get": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Get order status history",
         "operationId": "getOrderStatusHistory",
@@ -230,7 +218,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/OrderStatusHistory"
+                    "$ref": "#/components/schemas/OrderStatusHistoryDTO"
                   }
                 }
               }
@@ -242,10 +230,10 @@
     "/orders/user/{userId}": {
       "get": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
-        "summary": "Get user's orders",
-        "operationId": "getOrdersByUserId",
+        "summary": "Get user's orders (ADMIN)",
+        "operationId": "getUserOrdersByUserId",
         "parameters": [
           {
             "name": "userId",
@@ -263,10 +251,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OrderDTO"
-                  }
+                  "type": "object"
                 }
               }
             }
@@ -277,10 +262,10 @@
     "/orders/user/me": {
       "get": {
         "tags": [
-          "Order Management"
+          "Order Controller"
         ],
         "summary": "Get current user's orders",
-        "operationId": "getMyOrders",
+        "operationId": "getUserOrders",
         "responses": {
           "200": {
             "description": "OK",
@@ -461,201 +446,46 @@
           "quantity": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "PageOrderDTO": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderDTO"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
-          },
-          "unpaged": {
-            "type": "boolean"
-          }
-        }
-      },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "empty": {
-            "type": "boolean"
-          },
-          "sorted": {
-            "type": "boolean"
-          },
-          "unsorted": {
-            "type": "boolean"
-          }
-        }
-      },
-      "Order": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "userId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "orderNumber": {
-            "type": "string"
-          },
-          "totalAmount": {
-            "type": "number"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "RESERVED",
-              "PAYMENT_PENDING",
-              "PAYMENT_PROCESSING",
-              "PAID",
-              "CONFIRMED",
-              "PROCESSING",
-              "SHIPPED",
-              "DELIVERED",
-              "CANCELLED",
-              "FAILED"
-            ]
-          },
-          "shippingAddress": {
-            "type": "string"
-          },
-          "shippingCity": {
-            "type": "string"
-          },
-          "shippingPostalCode": {
-            "type": "string"
-          },
-          "paymentMethod": {
-            "type": "string"
-          },
-          "notes": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItem"
-            }
-          }
-        }
-      },
-      "OrderItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "order": {
-            "$ref": "#/components/schemas/Order"
-          },
-          "productId": {
-            "type": "integer",
-            "format": "int64"
           },
           "productName": {
             "type": "string"
           },
-          "quantity": {
-            "type": "integer",
-            "format": "int32"
-          },
           "unitPrice": {
             "type": "number"
-          },
-          "subtotal": {
-            "type": "number"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
-      "OrderStatusHistory": {
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OrderStatusHistoryDTO": {
         "type": "object",
         "properties": {
           "id": {
             "type": "integer",
             "format": "int64"
           },
-          "order": {
-            "$ref": "#/components/schemas/Order"
+          "orderId": {
+            "type": "integer",
+            "format": "int64"
           },
           "status": {
             "type": "string",

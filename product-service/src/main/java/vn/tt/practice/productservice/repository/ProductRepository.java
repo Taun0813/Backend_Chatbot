@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import vn.tt.practice.productservice.entity.Product;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -26,4 +27,21 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                  @Param("maxPrice") BigDecimal maxPrice,
                                  @Param("brand") String brand,
                                  Pageable pageable);
+//    @Query("""
+//        select distinct p
+//        from Product p
+//        left join fetch p.images
+//        left join fetch p.specs
+//        left join fetch p.category
+//        where p.id = :id
+//    """)
+//    Optional<Product> findByIdWithImagesAndSpecs(@Param("id") Long id);
+
+    @Query("""
+        select distinct p
+        from Product p
+        left join fetch p.images
+        where p.id = :id
+    """)
+    Optional<Product> findByIdWithImages(@Param("id") Long id);
 }

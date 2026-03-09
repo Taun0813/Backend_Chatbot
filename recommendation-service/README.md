@@ -1,3 +1,107 @@
+## Recommendation Service
+
+### Chức năng
+
+- Gợi ý sản phẩm cho người dùng:
+  - Gợi ý cá nhân hóa (personalized).
+  - Sản phẩm phổ biến (popular).
+  - Sản phẩm trending.
+  - Sản phẩm tương tự (similar/related).
+- Ghi nhận tương tác người dùng với sản phẩm.
+
+### Cổng
+
+- Mặc định: `8087`
+
+### Schema
+
+- `user_preferences`:
+  - `user_id`, `product_id`, `category_id`
+  - `view_count`, `purchase_count`
+  - `last_viewed_at`, `last_purchased_at`
+  - `preference_score` (DECIMAL 5,2)
+  - timestamps
+- `product_recommendations`:
+  - `user_id` (có thể null nếu global)
+  - `product_id`
+  - `recommendation_type` (POPULAR, PERSONALIZED, RELATED, TRENDING)
+  - `score`
+  - `rank_position`
+  - timestamps
+
+### Enum InteractionType
+
+```java
+VIEW(1.0),           // xem sản phẩm
+ADD_TO_CART(3.0),    // thêm vào giỏ
+PURCHASE(5.0),       // mua hàng
+REMOVE_FROM_CART(-1.0); // bỏ khỏi giỏ
+```
+
+### Endpoint chính (theo spec)
+
+- `GET /recommendations/me`
+  - Trả về gợi ý cá nhân hóa (PERSONALIZED) cho user hiện tại.
+- `POST /recommendations/track`
+  - Body `InteractionDTO { productId, categoryId, interactionType }`.
+  - Dùng `X-User-Id` làm nguồn userId.
+- `GET /recommendations/popular`
+  - Trả về danh sách sản phẩm phổ biến (POPULAR).
+- `GET /recommendations/similar/{productId}`
+  - Trả về danh sách sản phẩm tương tự/related.
+
+Thêm:
+
+- `GET /recommendations/user/preferences`
+  - Trả về danh sách `UserPreferenceDTO` cho user hiện tại.
+- `POST /recommendations/refresh/{type}` (ADMIN)
+  - Refresh dữ liệu trong bảng `product_recommendations` cho từng `RecommendationType`.
+
+### Business logic (collaborative filtering đơn giản)
+
+1. Lưu tương tác người dùng vào `user_preferences`:
+   - Tăng `view_count` khi VIEW/ADD_TO_CART.
+   - Tăng `purchase_count` khi PURCHASE.
+   - Cập nhật `preference_score` (views * 0.1 + purchases * 1.0).
+2. Khi refresh:
+   - `POPULAR`:
+     - Gom purchaseCount theo product, sort giảm dần, lưu top vào `product_recommendations` với type POPULAR.
+   - `PERSONALIZED`:
+     - Với mỗi user, lấy top sản phẩm theo `preference_score`, lưu vào `product_recommendations` type PERSONALIZED.
+   - `TRENDING`:
+     - Chọn sản phẩm có hoạt động trong 7 ngày gần nhất, sort theo score, lưu type TRENDING.
+   - `RELATED`:
+     - Sinh on-demand từ các sản phẩm mà user có hành vi tương tự (không cần lưu sẵn).
+
+### Sự kiện
+
+- `RecommendationEventListener`:
+  - `OrderCompletedEvent` (từ `order.exchange`, routing key `order.completed`):
+    - Gọi `recordPurchase(userId, productId, categoryId)` cho từng item trong order.
+  - `ProductViewedEvent` (từ `recommendation.exchange`, routing key `product.viewed`):
+    - Gọi `recordView(userId, productId, categoryId)`.
+
+### Bảo mật
+
+- SecurityConfig:
+  - Cho phép `/recommendations/**`, swagger, actuator.
+- Controller:
+  - `refreshRecommendations` yêu cầu ADMIN/SUPER_ADMIN, kiểm tra qua `X-User-Roles`.
+  - Các endpoint còn lại:
+    - Dùng `X-User-Id` cho những nơi cần user cụ thể (`/me`, `/user/preferences`).
+
+### Tích hợp với Product Service
+
+- Feign `ProductServiceClient`:
+  - Dùng để lấy thông tin chi tiết sản phẩm khi build `RecommendationDTO`:
+    - `productId`, `productName`, `description`, `price`, `categoryId`, `categoryName`.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Recommendation Service (Port 8089)
 
 **Chức năng**: Gợi ý sản phẩm cho người dùng dựa trên hành vi:

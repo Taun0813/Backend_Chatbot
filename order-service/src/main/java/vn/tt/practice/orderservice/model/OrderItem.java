@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -17,14 +17,38 @@ import java.util.UUID;
 public class OrderItem {
 
     @Id
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    private UUID productId;
-    private int quantity;
-    private int price;
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 
+    @Column(name = "product_name", nullable = false, length = 255)
+    private String productName;
+
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
+
+    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.Instant createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = java.time.Instant.now();
+        }
+        if (subtotal == null && unitPrice != null && quantity != null) {
+            subtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        }
+    }
 }

@@ -17,8 +17,7 @@ import vn.tt.practice.userservice.repository.UserRepository;
 import vn.tt.practice.userservice.security.CustomUserDetails;
 import vn.tt.practice.userservice.security.JwtTokenProvider;
 
-import java.sql.Timestamp;
-import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -47,7 +46,7 @@ public class AuthService {
                 .isActive(true)
                 .build();
 
-        userRepository.save(user);
+        userRepository.save(Objects.requireNonNull(user));
     }
 
     public LoginResponse login(UserLoginRequest request) {
@@ -86,7 +85,7 @@ public class AuthService {
         // We need to construct a valid Authentication object to pass to generateToken
         // Or overload generateToken to accept User
         // Since JwtTokenProvider depends on Authentication, let's look at it.
-        // It has generateToken(Map, UUID, String).
+        // It has generateToken(Map, Long, String).
         
         String accessToken = jwtTokenProvider.generateToken(new java.util.HashMap<>(), user.getId(), user.getRole().name());
         
@@ -107,6 +106,10 @@ public class AuthService {
         }
         
         long expiration = jwtConfig.getExpiration(); // Or calculate remaining time
-        redisTemplate.opsForValue().set(BLACKLIST_PREFIX + accessToken, userId.toString(), expiration, TimeUnit.MILLISECONDS);
+        String token = Objects.requireNonNull(accessToken, "accessToken must not be null");
+        Long uid = Objects.requireNonNull(userId, "userId must not be null");
+        String key = Objects.requireNonNull(BLACKLIST_PREFIX, "BLACKLIST_PREFIX must not be null") + token;
+        String value = Objects.toString(uid);
+        redisTemplate.opsForValue().set(Objects.requireNonNull(key), Objects.requireNonNull(value), expiration, TimeUnit.MILLISECONDS);
     }
 }

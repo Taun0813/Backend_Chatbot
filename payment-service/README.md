@@ -1,3 +1,64 @@
+## Payment Service
+
+### Chức năng
+
+- Xử lý thanh toán cho đơn hàng.
+- Tích hợp gateway thanh toán dạng mock:
+  - Mô phỏng độ trễ.
+  - Xác suất thành công khoảng 80%.
+- Gửi event thông báo kết quả thanh toán cho các service khác.
+
+### Cổng
+
+- Mặc định: `8085`
+
+### Bảng chính
+
+- `payments`:
+  - `order_id` (unique), `transaction_id`, `amount`, `payment_method`, `status`, `gateway_response`, `error_message`, `paid_at`, timestamps.
+
+### Endpoint chính
+
+- `POST /payments/process` – tạo và xử lý thanh toán.
+- `GET /payments/{id}` – chi tiết payment theo id.
+- `GET /payments/order/{orderId}` – payment theo orderId.
+- `POST /payments/callback` – callback từ gateway (mock).
+- `POST /payments/{id}/refund` – refund (ADMIN).
+- `GET /payments` – danh sách payment (ADMIN, paginated).
+
+### Mock Payment Gateway
+
+- `PaymentGatewayService.processPayment(PaymentRequest)`:
+  - Log thông tin orderId, amount, paymentMethod.
+  - Sleep 500ms để mô phỏng xử lý.
+  - `Math.random() < 0.8`:
+    - Thành công: sinh `transactionId` (UUID), status COMPLETED.
+  - Ngược lại:
+    - Ném `PaymentFailedException` với message lỗi.
+
+### Sự kiện
+
+- `PaymentEventPublisher` phát:
+  - `PaymentCompletedEvent (orderId, transactionId, amount)`
+  - `PaymentFailedEvent (orderId, reason)`
+  - `PaymentRefundedEvent (orderId, amount)`
+
+- `PaymentEventListener`:
+  - Lắng nghe `order.reserved` → tự động tạo `PaymentRequest` và gọi `processPayment`.
+
+### Bảo mật
+
+- SecurityConfig:
+  - Cho phép `/payments/**`, swagger, actuator.
+- Controller:
+  - `POST /payments/{id}/refund`, `GET /payments` yêu cầu ADMIN/SUPER_ADMIN, kiểm tra qua header `X-User-Roles`.
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
 ## Payment Service (Port 8085)
 
 **Chức năng**: Xử lý thanh toán cho đơn hàng:

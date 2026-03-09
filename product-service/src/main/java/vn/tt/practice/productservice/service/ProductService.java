@@ -22,6 +22,7 @@ import vn.tt.practice.productservice.mapper.ProductMapper;
 import vn.tt.practice.productservice.repository.CategoryRepository;
 import vn.tt.practice.productservice.repository.ProductRepository;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -41,13 +42,13 @@ public class ProductService  {
         return mapToPageResponse(productPage);
     }
 
-    @Transactional(readOnly = true)
-    @Cacheable(value = "product", key = "#id")
-    public ProductDTO getProductById(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
-        return productMapper.toDto(product);
-    }
+//    @Transactional(readOnly = true)
+//    @Cacheable(value = "product", key = "#id")
+//    public ProductDTO getProductById(Long id) {
+//        Product product = productRepository.findByIdWithDetails(id)
+//                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+//        return productMapper.toDto(product);
+//    }
 
     @Transactional(readOnly = true)
     public PageResponse<ProductDTO> searchProducts(ProductSearchRequest request) {
@@ -170,5 +171,40 @@ public class ProductService  {
                 productPage.getTotalPages(),
                 productPage.isLast()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public ProductCartInfoDTO getProductCartInfo(Long id) {
+        Product product = productRepository.findByIdWithImages(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        ProductCartInfoDTO dto = new ProductCartInfoDTO();
+        dto.setId(product.getId());
+        dto.setName(product.getName());
+        dto.setPrice(product.getPrice());
+        dto.setIsActive(product.getIsActive());
+        dto.setImageUrl(extractPrimaryImageUrl(product));
+        return dto;
+    }
+
+    private String extractPrimaryImageUrl(Product product) {
+        if (product.getImages() == null || product.getImages().isEmpty()) {
+            return null;
+        }
+
+        return product.getImages().stream()
+                .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                .findFirst()
+                .map(ProductImage::getImageUrl)
+                .orElseGet(() ->
+                        product.getImages().stream()
+                                .sorted(Comparator.comparing(
+                                        ProductImage::getDisplayOrder,
+                                        Comparator.nullsLast(Integer::compareTo)
+                                ))
+                                .findFirst()
+                                .map(ProductImage::getImageUrl)
+                                .orElse(null)
+                );
     }
 }

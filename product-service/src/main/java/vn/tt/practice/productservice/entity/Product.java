@@ -12,9 +12,6 @@ import java.util.List;
 @Entity
 @Table(name = "products")
 public class Product extends BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(nullable = false)
     private String name;
@@ -33,12 +30,6 @@ public class Product extends BaseEntity {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();

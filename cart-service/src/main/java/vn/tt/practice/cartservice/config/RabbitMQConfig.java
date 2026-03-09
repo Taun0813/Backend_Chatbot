@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+    public static final String ORDER_EXCHANGE = "order.exchange";
     public static final String DOMAIN_EXCHANGE = "domain-events-exchange";
 
     public static final String ORDER_CREATED_QUEUE = "cart.order-created.queue";
@@ -18,6 +19,11 @@ public class RabbitMQConfig {
 
     public static final String ORDER_CREATED_ROUTING_KEY = "order.created";
     public static final String PRODUCT_DELETED_ROUTING_KEY = "product.deleted";
+
+    @Bean
+    TopicExchange orderExchange() {
+        return new TopicExchange(ORDER_EXCHANGE, true, false);
+    }
 
     @Bean
     TopicExchange domainExchange() {
@@ -38,7 +44,7 @@ public class RabbitMQConfig {
     Binding orderCreatedBinding() {
         return BindingBuilder
                 .bind(orderCreatedQueue())
-                .to(domainExchange())
+                .to(orderExchange())
                 .with(ORDER_CREATED_ROUTING_KEY);
     }
 

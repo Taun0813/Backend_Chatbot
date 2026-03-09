@@ -24,7 +24,7 @@ public class OpenApiConfig {
                                 "Tracks user behavior and generates recommendations based on views and purchases.")
                         .contact(new Contact().name("E-Commerce Team").email("dev@ecommerce.local")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8089").description("Local (direct)"),
+                        new Server().url("http://localhost:8087").description("Local (direct)"),
                         new Server().url("http://localhost:8181").description("Via API Gateway")
                 ))
                 .components(new Components()

@@ -1,74 +1,164 @@
 package vn.tt.practice.orderservice.service;
 
-import vn.tt.practice.orderservice.client.InventoryClient;
-import vn.tt.practice.orderservice.dto.Request;
-import vn.tt.practice.orderservice.dto.Response;
-import vn.tt.practice.orderservice.model.Order;
-import vn.tt.practice.orderservice.model.OrderItem;
-import vn.tt.practice.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.tt.practice.orderservice.dto.CreateOrderRequest;
+import vn.tt.practice.orderservice.dto.OrderDTO;
+import vn.tt.practice.orderservice.dto.OrderItemDTO;
+import vn.tt.practice.orderservice.dto.OrderStatusHistoryDTO;
+import vn.tt.practice.orderservice.dto.OrderStatusUpdateRequest;
+import vn.tt.practice.orderservice.enums.OrderStatus;
+import vn.tt.practice.orderservice.event.OrderEventPublisher;
+import vn.tt.practice.orderservice.exception.InvalidOrderStatusException;
+import vn.tt.practice.orderservice.exception.OrderNotFoundException;
+import vn.tt.practice.orderservice.model.Order;
+import vn.tt.practice.orderservice.model.OrderItem;
+import vn.tt.practice.orderservice.model.OrderStatusHistory;
+import vn.tt.practice.orderservice.repository.OrderRepository;
+import vn.tt.practice.orderservice.repository.OrderStatusHistoryRepository;
 
-import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final InventoryClient inventoryClient;
+    private final OrderStatusHistoryRepository statusHistoryRepository;
+    private final OrderEventPublisher eventPublisher;
 
     @Transactional
-    public Response createOrder(
-            UUID userId,
-            Request request
-    ) {
-
-        UUID orderId = UUID.randomUUID();
-
+    public OrderDTO createOrder(Long userId, CreateOrderRequest request) {
         List<OrderItem> items = request.getItems().stream()
-                .map(i -> OrderItem.builder()
-                        .id(UUID.randomUUID())
-                        .productId(i.getProductId())
-                        .quantity(i.getQuantity())
-                        .price(100_000) // giả lập, sau này gọi Product Service
+                .map(item -> OrderItem.builder()
+                        .productId(item.getProductId())
+                        .productName(item.getProductName() != null ? item.getProductName() : "Product " + item.getProductId())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO)
                         .build())
-                .toList();
+                .collect(Collectors.toList());
 
-        long total = items.stream()
-                .mapToLong(i -> i.getPrice() * i.getQuantity())
-                .sum();
+        BigDecimal totalAmount = items.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Order order = Order.builder()
-                .id(orderId)
                 .userId(userId)
-                .status(Order.Status.PENDING)
-                .totalAmount(total)
-                .createdAt(Instant.now())
+                .totalAmount(totalAmount)
+                .status(OrderStatus.PENDING)
+                .shippingAddress(request.getShippingAddress())
+                .shippingCity(request.getShippingCity())
+                .shippingPostalCode(request.getShippingPostalCode())
+                .paymentMethod(request.getPaymentMethod())
+                .notes(request.getNotes())
                 .items(items)
                 .build();
 
-        items.forEach(i -> i.setOrder(order));
+        items.forEach(item -> item.setOrder(order));
 
-        orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        addStatusHistory(savedOrder, OrderStatus.PENDING, "Order created");
 
-        // reserve inventory
-        request.getItems().forEach(i ->
-                inventoryClient.reserve(
-                        new InventoryClient.ReserveRequest(
-                                i.getProductId(),
-                                orderId,
-                                i.getQuantity()
-                        )
-                )
-        );
+        eventPublisher.publishOrderCreated(savedOrder);
 
-        return Response.builder()
-                .orderId(orderId)
-                .status(order.getStatus().name())
+        return mapToDTO(savedOrder);
+    }
+
+    public OrderDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        return mapToDTO(order);
+    }
+
+    public List<OrderDTO> getUserOrders(Long userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderDTO> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(this::mapToDTO);
+    }
+
+    @Transactional
+    public OrderDTO updateOrderStatus(Long orderId, OrderStatusUpdateRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        order.setStatus(request.getStatus());
+        order = orderRepository.save(order);
+        addStatusHistory(order, request.getStatus(), request.getNotes() != null ? request.getNotes() : "Status updated");
+        return mapToDTO(order);
+    }
+
+    @Transactional
+    public OrderDTO cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.RESERVED) {
+            throw new InvalidOrderStatusException("Order cannot be cancelled in status: " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        order = orderRepository.save(order);
+        addStatusHistory(order, OrderStatus.CANCELLED, "Order cancelled");
+        eventPublisher.publishOrderCancelled(order);
+        return mapToDTO(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderStatusHistoryDTO> getOrderStatusHistory(Long orderId) {
+//        return statusHistoryRepository.findByOrder_IdOrderByCreatedAtAsc(orderId).stream()
+//                .map(h -> OrderStatusHistoryDTO.builder()
+//                        .id(h.getId())
+//                        .orderId(orderId)
+//                        .status(h.getStatus())
+//                        .notes(h.getNotes())
+//                        .createdAt(h.getCreatedAt())
+//                        .createdBy(h.getCreatedBy())
+//                        .build())
+//                .collect(Collectors.toList());
+        return statusHistoryRepository.findHistoryDto(orderId);
+    }
+
+    private void addStatusHistory(Order order, OrderStatus status, String notes) {
+        statusHistoryRepository.save(OrderStatusHistory.builder()
+                .order(order)
+                .status(status)
+                .notes(notes)
+                .build());
+    }
+
+    private OrderDTO mapToDTO(Order order) {
+        List<OrderItemDTO> itemDTOs = order.getItems().stream()
+                .map(item -> OrderItemDTO.builder()
+                        .id(item.getId())
+                        .productId(item.getProductId())
+                        .productName(item.getProductName())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .subtotal(item.getSubtotal())
+                        .build())
+                .collect(Collectors.toList());
+
+        return OrderDTO.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .userId(order.getUserId())
+                .totalAmount(order.getTotalAmount())
+                .status(OrderStatus.valueOf(order.getStatus().name()))
+                .shippingAddress(order.getShippingAddress())
+                .shippingCity(order.getShippingCity())
+                .shippingPostalCode(order.getShippingPostalCode())
+                .paymentMethod(order.getPaymentMethod())
+                .notes(order.getNotes())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .items(itemDTOs)
                 .build();
     }
 }
