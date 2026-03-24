@@ -1,7 +1,7 @@
 package vn.tt.practice.cartservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import vn.tt.practice.cartservice.model.CartItem;
+import vn.tt.practice.cartservice.entity.CartItem;
 
 import java.util.List;
 import java.util.Optional;

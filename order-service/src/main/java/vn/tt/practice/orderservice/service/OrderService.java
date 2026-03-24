@@ -14,9 +14,9 @@ import vn.tt.practice.orderservice.enums.OrderStatus;
 import vn.tt.practice.orderservice.event.OrderEventPublisher;
 import vn.tt.practice.orderservice.exception.InvalidOrderStatusException;
 import vn.tt.practice.orderservice.exception.OrderNotFoundException;
-import vn.tt.practice.orderservice.model.Order;
-import vn.tt.practice.orderservice.model.OrderItem;
-import vn.tt.practice.orderservice.model.OrderStatusHistory;
+import vn.tt.practice.orderservice.entity.Order;
+import vn.tt.practice.orderservice.entity.OrderItem;
+import vn.tt.practice.orderservice.entity.OrderStatusHistory;
 import vn.tt.practice.orderservice.repository.OrderRepository;
 import vn.tt.practice.orderservice.repository.OrderStatusHistoryRepository;
 

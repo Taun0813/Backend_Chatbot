@@ -1,4 +1,4 @@
-package vn.tt.practice.inventoryservice.model;
+package vn.tt.practice.inventoryservice.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

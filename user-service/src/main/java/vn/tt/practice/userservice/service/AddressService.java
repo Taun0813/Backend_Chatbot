@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.userservice.dto.AddressRequest;
 import vn.tt.practice.userservice.dto.AddressResponse;
-import vn.tt.practice.userservice.model.Address;
-import vn.tt.practice.userservice.model.User;
+import vn.tt.practice.userservice.entity.Address;
+import vn.tt.practice.userservice.entity.User;
 import vn.tt.practice.userservice.repository.AddressRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 

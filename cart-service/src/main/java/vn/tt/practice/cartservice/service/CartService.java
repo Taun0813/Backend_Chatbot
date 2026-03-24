@@ -6,12 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.cartservice.client.ProductServiceClient;
 import vn.tt.practice.cartservice.dto.CartDTO;
 import vn.tt.practice.cartservice.dto.CartItemDTO;
-import vn.tt.practice.cartservice.dto.CartItemResponse;
 import vn.tt.practice.cartservice.dto.ProductCartInfoDTO;
 import vn.tt.practice.cartservice.exception.CartItemNotFoundException;
-import vn.tt.practice.cartservice.exception.CartNotFoundException;
-import vn.tt.practice.cartservice.model.Cart;
-import vn.tt.practice.cartservice.model.CartItem;
+import vn.tt.practice.cartservice.entity.Cart;
+import vn.tt.practice.cartservice.entity.CartItem;
 import vn.tt.practice.cartservice.repository.CartItemRepository;
 import vn.tt.practice.cartservice.repository.CartRepository;
 

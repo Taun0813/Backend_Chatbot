@@ -1,4 +1,4 @@
-package vn.tt.practice.orderservice.model;
+package vn.tt.practice.orderservice.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

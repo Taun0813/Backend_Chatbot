@@ -1,5 +1,6 @@
 package vn.tt.practice.productservice.service;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.productservice.dto.*;
@@ -22,6 +24,8 @@ import vn.tt.practice.productservice.mapper.ProductMapper;
 import vn.tt.practice.productservice.repository.CategoryRepository;
 import vn.tt.practice.productservice.repository.ProductRepository;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -42,13 +46,75 @@ public class ProductService  {
         return mapToPageResponse(productPage);
     }
 
-//    @Transactional(readOnly = true)
-//    @Cacheable(value = "product", key = "#id")
-//    public ProductDTO getProductById(Long id) {
-//        Product product = productRepository.findByIdWithDetails(id)
-//                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
-//        return productMapper.toDto(product);
-//    }
+    @Transactional(readOnly = true)
+    public PageResponse<ProductDTO> getAllProducts(
+            int page,
+            int size,
+            String keyword,
+            String brand,
+            Long categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Boolean isActive
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Specification<Product> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (keyword != null && !keyword.isBlank()) {
+                String pattern = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(
+                        cb.like(cb.lower(root.get("name")), pattern)
+                );
+            }
+
+            if (brand != null && !brand.isBlank()) {
+                predicates.add(
+                        cb.equal(cb.lower(root.get("brand")), brand.trim().toLowerCase())
+                );
+            }
+
+            if (categoryId != null) {
+                predicates.add(
+                        cb.equal(root.get("category").get("id"), categoryId)
+                );
+            }
+
+            if (minPrice != null) {
+                predicates.add(
+                        cb.greaterThanOrEqualTo(root.get("price").as(BigDecimal.class), minPrice)
+                );
+            }
+
+            if (maxPrice != null) {
+                predicates.add(
+                        cb.lessThanOrEqualTo(root.get("price").as(BigDecimal.class), maxPrice)
+                );
+            }
+
+            if (isActive != null) {
+                predicates.add(
+                        cb.equal(root.get("isActive"), isActive)
+                );
+            }
+
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
+        return mapToPageResponse(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "product", key = "#id")
+    public ProductDTO getProductById(Long id) {
+        Product product = productRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        return productMapper.toDto(product);
+    }
 
     @Transactional(readOnly = true)
     public PageResponse<ProductDTO> searchProducts(ProductSearchRequest request) {

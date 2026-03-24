@@ -7,7 +7,7 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5433/ai_agent
-    username: ai_agent
+    username: postgres
     password: 123
     driver-class-name: org.postgresql.Driver
 

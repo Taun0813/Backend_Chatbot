@@ -3,7 +3,7 @@ package vn.tt.practice.cartservice.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import vn.tt.practice.cartservice.model.Cart;
+import vn.tt.practice.cartservice.entity.Cart;
 
 import java.util.Optional;
 

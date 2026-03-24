@@ -11,8 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.tt.practice.inventoryservice.dto.Request;
 import vn.tt.practice.inventoryservice.dto.Response;
-import vn.tt.practice.inventoryservice.model.Inventory;
-import vn.tt.practice.inventoryservice.model.InventoryTransaction;
+import vn.tt.practice.inventoryservice.entity.Inventory;
+import vn.tt.practice.inventoryservice.entity.InventoryTransaction;
 import vn.tt.practice.inventoryservice.repository.InventoryRepository;
 import vn.tt.practice.inventoryservice.service.InventoryService;
 

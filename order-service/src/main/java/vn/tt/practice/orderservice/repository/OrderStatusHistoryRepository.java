@@ -4,7 +4,7 @@ import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import vn.tt.practice.orderservice.dto.OrderStatusHistoryDTO;
-import vn.tt.practice.orderservice.model.OrderStatusHistory;
+import vn.tt.practice.orderservice.entity.OrderStatusHistory;
 
 import java.util.List;
 

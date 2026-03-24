@@ -3,6 +3,7 @@ package vn.tt.practice.productservice.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
     Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE " +
@@ -27,15 +28,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                  @Param("maxPrice") BigDecimal maxPrice,
                                  @Param("brand") String brand,
                                  Pageable pageable);
-//    @Query("""
-//        select distinct p
-//        from Product p
-//        left join fetch p.images
-//        left join fetch p.specs
-//        left join fetch p.category
-//        where p.id = :id
-//    """)
-//    Optional<Product> findByIdWithImagesAndSpecs(@Param("id") Long id);
+    @Query("""
+        select distinct p
+        from Product p
+
+        left join fetch p.specs
+        left join fetch p.category
+        where p.id = :id
+    """)
+    Optional<Product> findByIdWithDetails(@Param("id") Long id);
 
     @Query("""
         select distinct p

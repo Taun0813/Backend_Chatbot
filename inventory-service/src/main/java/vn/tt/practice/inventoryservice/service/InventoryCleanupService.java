@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.tt.practice.inventoryservice.model.Inventory;
-import vn.tt.practice.inventoryservice.model.InventoryReservation;
+import vn.tt.practice.inventoryservice.entity.Inventory;
+import vn.tt.practice.inventoryservice.entity.InventoryReservation;
 import vn.tt.practice.inventoryservice.repository.InventoryRepository;
 import vn.tt.practice.inventoryservice.repository.InventoryReservationRepository;
 

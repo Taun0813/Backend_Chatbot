@@ -1,4 +1,4 @@
-package vn.tt.practice.userservice.model;
+package vn.tt.practice.userservice.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

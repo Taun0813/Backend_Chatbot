@@ -4,7 +4,7 @@
 services:
   postgresql:
     image: postgres:15-alpine
-    container_name: ai-agent-postgres
+    container_name: postgres-prod
     environment:
       POSTGRES_DB: ai_agent
       POSTGRES_USER: ai_agent
@@ -21,7 +21,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ai-agent-redis
+    container_name: redis-prod
     command: redis-server --appendonly yes
     ports:
       - "6379:6379"
@@ -35,7 +35,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: ai-agent-rabbitmq
+    container_name: rabbitmq-ai-agent
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: rabbitmq_password
@@ -52,7 +52,8 @@ services:
       retries: 5
 
   discovery-service:
-    image: ${DOCKERHUB_USER:-youruser}/discovery-service:latest
+#    image: ${DOCKERHUB_USER:-youruser}/discovery-service:latest
+    image: thaituan130803/chatbot:discovery-service
     container_name: discovery-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -72,7 +73,8 @@ services:
       start_period: 30s
 
   api-gateway:
-    image: ${DOCKERHUB_USER:-youruser}/api-gateway:latest
+#    image: ${DOCKERHUB_USER:-youruser}/api-gateway:latest
+    image: thaituan130803/chatbot:api-gateway
     container_name: api-gateway
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -84,7 +86,8 @@ services:
       discovery-service: { condition: service_healthy }
 
   user-service:
-    image: ${DOCKERHUB_USER:-youruser}/user-service:latest
+#    image: ${DOCKERHUB_USER:-youruser}/user-service:latest
+    image: thaituan130803/chatbot:user-service
     container_name: user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -93,7 +96,7 @@ services:
     networks:
       - app-network
     depends_on:
-      discovery-service: { condition: service_healthy }
+#      discovery-service: { condition: service_healthy }
       postgresql: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }

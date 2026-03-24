@@ -1,4 +1,4 @@
-package vn.tt.practice.cartservice.model;
+package vn.tt.practice.cartservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
