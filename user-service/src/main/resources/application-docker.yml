@@ -1,6 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgresql:5432/ai_agent_db
+    url: jdbc:postgresql://postgresql:5432/ai_agent
+    username: ai_agent
+    password: 123
   data:
     redis:
       host: redis

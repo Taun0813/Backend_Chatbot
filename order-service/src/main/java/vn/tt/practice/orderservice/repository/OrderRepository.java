@@ -1,9 +1,16 @@
 package vn.tt.practice.orderservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import vn.tt.practice.orderservice.model.Order;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import vn.tt.practice.orderservice.entity.Order;
 
-import java.util.UUID;
+import java.util.List;
 
-public interface OrderRepository extends JpaRepository<Order, UUID> {
+public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
+    
+    @Query("SELECT o FROM Order o WHERE o.userId = :userId ORDER BY o.createdAt DESC")
+    List<Order> findUserOrders(@Param("userId") Long userId);
 }

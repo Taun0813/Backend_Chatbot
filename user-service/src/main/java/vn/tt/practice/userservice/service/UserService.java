@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.tt.practice.userservice.dto.UserProfileUpdateRequest;
 import vn.tt.practice.userservice.dto.UserResponse;
-import vn.tt.practice.userservice.model.Role;
-import vn.tt.practice.userservice.model.User;
-import vn.tt.practice.userservice.model.UserProfile;
+import vn.tt.practice.userservice.entity.Role;
+import vn.tt.practice.userservice.entity.User;
+import vn.tt.practice.userservice.entity.UserProfile;
 import vn.tt.practice.userservice.repository.UserProfileRepository;
 import vn.tt.practice.userservice.repository.UserRepository;
 
@@ -81,6 +81,12 @@ public class UserService {
         
         user = userRepository.save(user);
         return mapToResponse(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = getUserEntity(id);
+        userRepository.delete(user);
     }
 
     private User getUserEntity(Long userId) {

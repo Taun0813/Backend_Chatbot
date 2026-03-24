@@ -5,13 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import vn.tt.practice.inventoryservice.model.Inventory;
+import vn.tt.practice.inventoryservice.entity.Inventory;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
+public interface InventoryRepository extends JpaRepository<Inventory, Long> {
+    
+    Optional<Inventory> findByProductId(Long productId);
+    
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Inventory i where i.productId = :productId")
-    Optional<Inventory> lockByProductId(@Param("productId") UUID productId);
+    Optional<Inventory> lockByProductId(@Param("productId") Long productId);
 }

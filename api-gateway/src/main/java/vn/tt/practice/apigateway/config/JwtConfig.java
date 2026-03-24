@@ -11,7 +11,7 @@ public class JwtConfig {
     private String secret;
 
     private String header = "Authorization";
-    private String prefix = "Bearer";
+    private String prefix = "Bearer ";
 
     public String getSecret() {
         return secret;
@@ -37,4 +37,3 @@ public class JwtConfig {
         this.prefix = prefix;
     }
 }
-

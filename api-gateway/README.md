@@ -1,42 +1,55 @@
-# Product Service (Port 8082)
+## Gateway Service
 
-Product Service quản lý **Product Catalog**: Products, Categories, Product Images, Product Specs.
-Service này chạy trong hệ microservices và được route qua **API Gateway**.
+### Chức năng
 
-## Tech
-- Spring Boot 3.2.1, Java 17
-- PostgreSQL (DB: `product_db`) + Flyway migration
-- Redis cache
-- RabbitMQ events
-- SpringDoc OpenAPI Swagger UI
+- Là entrypoint duy nhất cho client (Web/Mobile).
+- Route request tới các microservice theo path.
+- Validate JWT và đính kèm thông tin người dùng vào header:
+  - `X-User-Id`
+  - `X-User-Roles`
 
----
+### Công nghệ
 
-## Run locally (without Docker)
-### 1) Prerequisites
-- Java 17
-- PostgreSQL 15+
-- Redis 7+
-- RabbitMQ 3+
-- Eureka Discovery (optional for local direct run, required if using lb://)
+- Spring Boot 3
+- Spring Cloud Gateway
+- Spring Security (JWT)
+- Eureka Client
 
-### 2) Environment variables (recommended)
-You can set via IntelliJ Run Config or OS env:
+### Cổng
 
-- `SPRING_PROFILES_ACTIVE=default`
-- `DB_HOST=localhost`
-- `DB_PORT=5432`
-- `DB_NAME=product_db`
-- `DB_USERNAME=postgres`
-- `DB_PASSWORD=postgres`
-- `REDIS_HOST=localhost`
-- `REDIS_PORT=6379`
-- `RABBITMQ_HOST=localhost`
-- `RABBITMQ_PORT=5672`
-- `EUREKA_HOST=localhost`
-- `INTERNAL_TOKEN=change-me-in-prod`
+- Mặc định: `8181`
 
-### 3) Start
+### Bảo mật
+
+- Nhận JWT từ header `Authorization: Bearer <token>`.
+- Validate token (chữ ký, hạn, issuer, audience).
+- Nếu hợp lệ:
+  - Trích `userId`, `roles` từ JWT.
+  - Gắn vào header gửi xuống các service:
+    - `X-User-Id: <userId>`
+    - `X-User-Roles: ROLE_USER,ROLE_ADMIN,...`
+- Các route public như `/api/auth/**`, swagger, actuator được cấu hình bypass JWT.
+
+### Cấu hình route (ví dụ)
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**, /api/auth/** 
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**, /api/categories/**
+```
+
+### Chạy service
+
 ```bash
-mvn clean package
-java -jar target/product-service-*.jar
+mvn spring-boot:run
+```
+

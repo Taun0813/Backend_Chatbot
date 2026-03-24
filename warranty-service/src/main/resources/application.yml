@@ -4,7 +4,7 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5433/ai_agent
-    username: ai_agent
+    username: postgres
     password: 123
     driver-class-name: org.postgresql.Driver
 
@@ -17,8 +17,19 @@ spring:
       hibernate:
         format_sql: true
 
+  flyway:
+    validate-on-migrate: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: rabbitmq_password
+
+
+
 server:
-  port: 8086
+  port: 8088
 
 eureka:
   client:
@@ -26,3 +37,5 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+

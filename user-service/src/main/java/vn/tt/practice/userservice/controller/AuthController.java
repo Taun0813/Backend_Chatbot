@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/users/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
-@Tag(name = "User Controller", description = "APIs for user authentication and management")
+@Tag(name = "Auth Controller", description = "APIs for user authentication")
 public class AuthController {
 
     private final AuthService authService;
@@ -39,15 +39,21 @@ public class AuthController {
                 .build());
     }
 
-    @PostMapping("/refresh-token")
-    @Operation(summary = "Refresh token")
-    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody Map<String, String> request) {
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh token (alias)")
+    public ResponseEntity<ApiResponse<LoginResponse>> refresh(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
         LoginResponse response = authService.refreshToken(refreshToken);
         return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
                 .data(response)
                 .meta(Meta.builder().timestamp(LocalDateTime.now().toString()).build())
                 .build());
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh token")
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshTokenEndpoint(@RequestBody Map<String, String> request) {
+        return refresh(request);
     }
 
     @PostMapping("/logout")

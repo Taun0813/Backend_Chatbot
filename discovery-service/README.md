@@ -1,3 +1,39 @@
+## Discovery Service (Eureka Server)
+
+### Chức năng
+
+- Đóng vai trò service registry cho toàn bộ hệ thống.
+- Các microservice đăng ký/renew với Eureka.
+- Gateway và các service khác dùng service-id để gọi qua load balancing.
+
+### Công nghệ
+
+- Spring Boot 3
+- Spring Cloud Netflix Eureka Server
+
+### Cổng
+
+- Mặc định: `8761`
+
+### Endpoint
+
+- Eureka Dashboard: `http://localhost:8761`
+
+### Chạy service
+
+```bash
+mvn spring-boot:run
+```
+
+Các service khác cấu hình:
+
+```yaml
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+```
+
 # Discovery Service (Eureka Server)
 
 > **Service Registry và Discovery Server cho hệ thống microservices**

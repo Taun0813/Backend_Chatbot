@@ -1,9 +1,13 @@
 package vn.tt.practice.cartservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import vn.tt.practice.cartservice.model.Cart;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import vn.tt.practice.cartservice.entity.Cart;
 
-import java.util.UUID;
+import java.util.Optional;
 
-public interface CartRepository extends JpaRepository<Cart, UUID> {
+public interface CartRepository extends JpaRepository<Cart, Long> {
+    @Query("SELECT c FROM Cart c LEFT JOIN FETCH c.items WHERE c.userId = :userId")
+    Optional<Cart> findByUserIdWithItems(@Param("userId") Long userId);
 }
