@@ -1,10 +1,12 @@
 package vn.tt.practice.productservice.dto;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
+@Builder
 public class ProductSearchRequest {
     private String keyword;
     private Long categoryId;

@@ -36,30 +36,30 @@ public class ProductController {
         return roles.contains(ROLE_ADMIN) || roles.contains(ROLE_SUPER_ADMIN);
     }
 
-//    @GetMapping
-//    @Operation(summary = "Get all products (paginated)")
-//    public ResponseEntity<PageResponse<ProductDTO>> getAllProducts(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size) {
-//        return ResponseEntity.ok(productService.getAllProducts(page, size));
-//    }
-
     @GetMapping
-    @Operation(summary = "Get all products with search and filters")
+    @Operation(summary = "Get all products (paginated)")
     public ResponseEntity<PageResponse<ProductDTO>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Boolean isActive
-    ) {
-        return ResponseEntity.ok(
-                productService.getAllProducts(page, size, keyword, brand, categoryId, minPrice, maxPrice, isActive)
-        );
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(productService.getAllProducts(page, size));
     }
+
+//    @GetMapping
+//    @Operation(summary = "Get all products with search and filters")
+//    public ResponseEntity<PageResponse<ProductDTO>> getAllProducts(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(required = false) String brand,
+//            @RequestParam(required = false) Long categoryId,
+//            @RequestParam(required = false) BigDecimal minPrice,
+//            @RequestParam(required = false) BigDecimal maxPrice,
+//            @RequestParam(required = false) Boolean isActive
+//    ) {
+//        return ResponseEntity.ok(
+//                productService.getAllProducts(page, size, keyword, brand, categoryId, minPrice, maxPrice, isActive)
+//        );
+//    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID")
@@ -74,7 +74,29 @@ public class ProductController {
 
     @GetMapping("/search")
     @Operation(summary = "Search products")
-    public ResponseEntity<PageResponse<ProductDTO>> searchProducts(@ModelAttribute ProductSearchRequest request) {
+    public ResponseEntity<PageResponse<ProductDTO>> searchProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .page(page)
+                .size(size)
+                .keyword(keyword)
+                .brand(brand)
+                .categoryId(categoryId)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .sortBy(sortBy)
+                .sortDir(sortDir)
+                .build();
+
         return ResponseEntity.ok(productService.searchProducts(request));
     }
 

@@ -41,72 +41,72 @@ public class ProductService  {
     @Transactional(readOnly = true)
     @Cacheable(value = "productList", key = "'all_' + #page + '_' + #size")
     public PageResponse<ProductDTO> getAllProducts(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
         Page<Product> productPage = productRepository.findAll(pageable);
         return mapToPageResponse(productPage);
     }
 
-    @Transactional(readOnly = true)
-    public PageResponse<ProductDTO> getAllProducts(
-            int page,
-            int size,
-            String keyword,
-            String brand,
-            Long categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Boolean isActive
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
-
-        Specification<Product> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (keyword != null && !keyword.isBlank()) {
-                String pattern = "%" + keyword.trim().toLowerCase() + "%";
-                predicates.add(
-                        cb.like(cb.lower(root.get("name")), pattern)
-                );
-            }
-
-            if (brand != null && !brand.isBlank()) {
-                predicates.add(
-                        cb.equal(cb.lower(root.get("brand")), brand.trim().toLowerCase())
-                );
-            }
-
-            if (categoryId != null) {
-                predicates.add(
-                        cb.equal(root.get("category").get("id"), categoryId)
-                );
-            }
-
-            if (minPrice != null) {
-                predicates.add(
-                        cb.greaterThanOrEqualTo(root.get("price").as(BigDecimal.class), minPrice)
-                );
-            }
-
-            if (maxPrice != null) {
-                predicates.add(
-                        cb.lessThanOrEqualTo(root.get("price").as(BigDecimal.class), maxPrice)
-                );
-            }
-
-            if (isActive != null) {
-                predicates.add(
-                        cb.equal(root.get("isActive"), isActive)
-                );
-            }
-
-            return predicates.isEmpty()
-                    ? cb.conjunction()
-                    : cb.and(predicates.toArray(new Predicate[0]));
-        };
-
-        Page<Product> productPage = productRepository.findAll(spec, pageable);
-        return mapToPageResponse(productPage);
-    }
+//    @Transactional(readOnly = true)
+//    public PageResponse<ProductDTO> getAllProducts(
+//            int page,
+//            int size,
+//            String keyword,
+//            String brand,
+//            Long categoryId,
+//            BigDecimal minPrice,
+//            BigDecimal maxPrice,
+//            Boolean isActive
+//    ) {
+//        Pageable pageable = PageRequest.of(page, size);
+//
+//        Specification<Product> spec = (root, query, cb) -> {
+//            List<Predicate> predicates = new ArrayList<>();
+//
+//            if (keyword != null && !keyword.isBlank()) {
+//                String pattern = "%" + keyword.trim().toLowerCase() + "%";
+//                predicates.add(
+//                        cb.like(cb.lower(root.get("name")), pattern)
+//                );
+//            }
+//
+//            if (brand != null && !brand.isBlank()) {
+//                predicates.add(
+//                        cb.equal(cb.lower(root.get("brand")), brand.trim().toLowerCase())
+//                );
+//            }
+//
+//            if (categoryId != null) {
+//                predicates.add(
+//                        cb.equal(root.get("category").get("id"), categoryId)
+//                );
+//            }
+//
+//            if (minPrice != null) {
+//                predicates.add(
+//                        cb.greaterThanOrEqualTo(root.get("price").as(BigDecimal.class), minPrice)
+//                );
+//            }
+//
+//            if (maxPrice != null) {
+//                predicates.add(
+//                        cb.lessThanOrEqualTo(root.get("price").as(BigDecimal.class), maxPrice)
+//                );
+//            }
+//
+//            if (isActive != null) {
+//                predicates.add(
+//                        cb.equal(root.get("isActive"), isActive)
+//                );
+//            }
+//
+//            return predicates.isEmpty()
+//                    ? cb.conjunction()
+//                    : cb.and(predicates.toArray(new Predicate[0]));
+//        };
+//
+//        Page<Product> productPage = productRepository.findAll(spec, pageable);
+//        return mapToPageResponse(productPage);
+//    }
 
     @Transactional(readOnly = true)
     @Cacheable(value = "product", key = "#id")
@@ -118,18 +118,60 @@ public class ProductService  {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductDTO> searchProducts(ProductSearchRequest request) {
-        Sort sort = Sort.by(Sort.Direction.fromString(request.getSortDir()), request.getSortBy());
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
-        
-        Page<Product> productPage = productRepository.searchProducts(
-                request.getKeyword(),
-                request.getCategoryId(),
-                request.getMinPrice(),
-                request.getMaxPrice(),
-                request.getBrand(),
-                pageable
+        Sort sort = Sort.by(
+                Sort.Direction.fromString(request.getSortDir()),
+                request.getSortBy()
         );
+
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), sort);
+
+        Specification<Product> spec = buildProductSearchSpecification(request);
+
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
         return mapToPageResponse(productPage);
+    }
+
+    private Specification<Product> buildProductSearchSpecification(ProductSearchRequest request) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+                String pattern = "%" + request.getKeyword().trim().toLowerCase() + "%";
+                predicates.add(
+                        cb.or(
+                                cb.like(cb.lower(root.get("name")), pattern),
+                                cb.like(cb.lower(root.get("brand")), pattern),
+                                cb.like(cb.lower(root.get("model")), pattern)
+                        )
+                );
+            }
+
+            if (request.getBrand() != null && !request.getBrand().isBlank()) {
+                predicates.add(
+                        cb.equal(cb.lower(root.get("brand")), request.getBrand().trim().toLowerCase())
+                );
+            }
+
+            if (request.getCategoryId() != null) {
+                predicates.add(
+                        cb.equal(root.get("category").get("id"), request.getCategoryId())
+                );
+            }
+
+            if (request.getMinPrice() != null) {
+                predicates.add(
+                        cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice())
+                );
+            }
+
+            if (request.getMaxPrice() != null) {
+                predicates.add(
+                        cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice())
+                );
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     @Transactional(readOnly = true)
